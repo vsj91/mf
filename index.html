@@ -7,6 +7,7 @@
   <title>Fund Finder India</title>
   <style>
     :root {
+      color-scheme: light;
       --bg: #f5f5f7;
       --paper: #ffffff;
       --ink: #1d1d1f;
@@ -45,7 +46,7 @@
       position: sticky;
       top: 0;
       z-index: 20;
-      backdrop-filter: blur(18px);
+      backdrop-filter: saturate(180%) blur(18px);
       background: rgba(245, 245, 247, .82);
       border-bottom: 1px solid rgba(229, 229, 234, .72);
     }
@@ -725,6 +726,111 @@
       padding-top: 8px;
     }
     .mobile-sticky .btn { width: 100%; }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --bg: #000000;
+        --paper: #1c1c1e;
+        --ink: #f5f5f7;
+        --muted: #a1a1a6;
+        --line: rgba(255, 255, 255, .13);
+        --brand: #35d49a;
+        --brand-2: #12b886;
+        --accent: #ffd166;
+        --soft: rgba(53, 212, 154, .14);
+        --rose: rgba(255, 69, 58, .15);
+        --blue: rgba(10, 132, 255, .18);
+        --shadow: 0 24px 70px rgba(0, 0, 0, .42);
+        --danger: #ff8f86;
+        --good: #57d995;
+        --warn: #ffd166;
+      }
+      body {
+        background:
+          radial-gradient(circle at 50% -10%, rgba(53, 212, 154, .16), transparent 30rem),
+          radial-gradient(circle at 100% 16%, rgba(10, 132, 255, .10), transparent 26rem),
+          linear-gradient(180deg, #111113 0%, #050506 48%, #000000 100%);
+      }
+      .topbar {
+        background: rgba(18, 18, 20, .78);
+        border-bottom-color: rgba(255, 255, 255, .10);
+      }
+      .tabs, .hero-panel, .panel, .study-mix {
+        background: rgba(28, 28, 30, .72);
+        border-color: rgba(255, 255, 255, .12);
+        box-shadow: var(--shadow);
+      }
+      .tab.active, .btn-primary {
+        color: #06150f;
+        background: linear-gradient(135deg, #6ee7b7, var(--brand-2));
+        box-shadow: 0 16px 38px rgba(18, 184, 134, .22);
+      }
+      .eyebrow, .mini-row, .choice, .fund-card, .metric, .learn-card,
+      .search-item, .chip, .chart-wrap, .table-wrap, .input, .segment {
+        background: rgba(28, 28, 30, .86);
+        border-color: rgba(255, 255, 255, .12);
+      }
+      .input, select, button {
+        color: var(--ink);
+      }
+      .input:focus {
+        border-color: rgba(53, 212, 154, .78);
+        box-shadow: 0 0 0 4px rgba(53, 212, 154, .16);
+      }
+      .btn-secondary {
+        color: var(--ink);
+        background: rgba(44, 44, 46, .78);
+        border-color: rgba(255, 255, 255, .13);
+      }
+      .btn-ghost {
+        color: #8ff0c5;
+        background: rgba(53, 212, 154, .14);
+      }
+      .mini-icon, .why {
+        background: rgba(53, 212, 154, .13);
+        color: #c8f7e4;
+      }
+      .pill {
+        background: rgba(255, 209, 102, .15);
+        color: #ffe1a3;
+      }
+      .notice {
+        background: rgba(255, 209, 102, .12);
+        border-color: rgba(255, 209, 102, .28);
+        color: #f6d990;
+      }
+      .error {
+        background: rgba(255, 69, 58, .13);
+        border-color: rgba(255, 105, 97, .32);
+        color: #ffb4ad;
+      }
+      .score-ring {
+        background: conic-gradient(var(--brand) calc(var(--p) * 1%), rgba(255, 255, 255, .12) 0);
+      }
+      .score-ring span, .mix-donut::after {
+        background: #1c1c1e;
+      }
+      .bar-track {
+        background: rgba(255, 255, 255, .10);
+      }
+      th {
+        background: rgba(53, 212, 154, .10);
+        color: #c8f7e4;
+      }
+      .best-cell {
+        background: rgba(255, 209, 102, .14);
+        color: #ffe1a3;
+      }
+      .fund-card.best {
+        border-color: rgba(255, 209, 102, .58);
+        box-shadow: 0 20px 54px rgba(0, 0, 0, .38);
+      }
+      .empty {
+        background: rgba(28, 28, 30, .62);
+        border-color: rgba(255, 255, 255, .18);
+      }
+    }
 
     @media (max-width: 880px) {
       .nav { align-items: start; flex-direction: column; padding: 12px 0; gap: 12px; }
