@@ -108,7 +108,7 @@
   <link rel="preconnect" href="https://api.mfapi.in">
   <link rel="preconnect" href="https://www.googletagmanager.com">
   <link rel="preconnect" href="https://translate.google.com">
-  <link rel="stylesheet" href="style.css?v=20260809-perf3">
+  <link rel="stylesheet" href="style.css?v=20260809-perf4">
 </head>
 <body>
   <header class="topbar">
@@ -219,10 +219,10 @@
 
         <div class="actions desktop-action">
           <div class="status" id="findStatus"><span class="spinner"></span><span>Analysing funds from MFapi...</span></div>
-          <button class="btn btn-primary" id="findFundsBtn">Find My Funds</button>
+          <button class="btn btn-primary" id="findFundsBtn">Study Funds</button>
         </div>
         <div class="mobile-sticky">
-          <button class="btn btn-primary" id="findFundsMobileBtn">Find My Funds</button>
+          <button class="btn btn-primary" id="findFundsMobileBtn">Study Funds</button>
         </div>
         <div id="findError"></div>
       </div>
@@ -240,7 +240,7 @@
       <div class="two-col">
         <div class="panel">
           <h3 class="step-title">Select funds</h3>
-          <p class="helper-text">Challenge: choose up to 3 funds and we replay the same monthly SIP using historical NAVs. The winner is the fund with the highest value today.</p>
+          <p class="helper-text">Challenge: choose up to 3 funds and we replay the same monthly SIP using historical NAVs. The top result is the fund with the highest historical value today.</p>
           <div class="search-box">
             <label for="sipSearch">Search mutual funds</label>
             <input class="input" id="sipSearch" placeholder="Try: Parag Parikh, Nifty, HDFC Balanced" autocomplete="off">
@@ -728,6 +728,17 @@
     </section>
   </main>
 
-  <script defer src="app.js?v=20260809-perf3"></script>
+  <footer class="site-footer">
+    <nav aria-label="Site information">
+      <a href="/about/">About</a>
+      <a href="/contact/">Contact</a>
+      <a href="/privacy-policy/">Privacy Policy</a>
+      <a href="/terms/">Terms & Disclaimer</a>
+      <a href="/sitemap.xml">Sitemap</a>
+    </nav>
+    <p>PlanSIP is an educational finance tool. It does not provide investment advice or recommend buying, selling, or holding any mutual fund.</p>
+  </footer>
+
+  <script defer src="app.js?v=20260809-perf4"></script>
 </body>
 </html>
