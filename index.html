@@ -108,7 +108,7 @@
   <link rel="preconnect" href="https://api.mfapi.in">
   <link rel="preconnect" href="https://www.googletagmanager.com">
   <link rel="preconnect" href="https://translate.google.com">
-  <link rel="stylesheet" href="style.css?v=20260809-perf6">
+  <link rel="stylesheet" href="style.css?v=20260809-perf7">
 </head>
 <body>
   <header class="topbar">
@@ -125,6 +125,7 @@
         <button class="tab" data-tab="metals">Gold/Silver</button>
         <button class="tab" data-tab="sip">SIP Challenge</button>
         <button class="tab" data-tab="compare">Compare</button>
+        <button class="tab" data-tab="popular">Popular Funds</button>
         <button class="tab" data-tab="learn">Learn</button>
       </nav>
       <div class="language-wrap" aria-label="Language selector">
@@ -548,6 +549,26 @@
       </div>
     </section>
 
+    <section id="popular" class="section" aria-labelledby="popular-title">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="popular-title">Popular Funds</h2>
+          <p class="section-copy">A separate learning list from broad MFapi category searches. It does not affect your Study Funds shortlist.</p>
+        </div>
+      </div>
+      <div class="panel wizard">
+        <div class="notice">MFapi does not publish AUM or investor-count ranking. This tab uses broad, commonly used categories and ranks funds by real NAV history, Direct/Growth fit, and analytical score. This is not investment advice.</div>
+        <div class="actions">
+          <button class="btn btn-primary" id="runPopularBtn">Load Popular Funds</button>
+          <div class="status" id="popularStatus"><span class="spinner"></span><span>Loading popular funds...</span></div>
+        </div>
+        <div id="popularError"></div>
+        <div id="popularResults">
+          <div class="empty">Open this tab to study broad-category funds separately.</div>
+        </div>
+      </div>
+    </section>
+
     <section id="learn" class="section" aria-labelledby="learn-title">
       <div class="section-head">
         <div>
@@ -754,6 +775,6 @@
     <p>PlanSIP is an educational finance tool. It does not provide investment advice or recommend buying, selling, or holding any mutual fund.</p>
   </footer>
 
-  <script defer src="app.js?v=20260809-perf6"></script>
+  <script defer src="app.js?v=20260809-perf7"></script>
 </body>
 </html>
