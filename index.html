@@ -552,6 +552,57 @@
       line-height: 1.45;
       font-size: 14px;
     }
+    .goal-result {
+      display: grid;
+      gap: 16px;
+    }
+    .goal-hero {
+      border-radius: 24px;
+      padding: 20px;
+      color: #06150f;
+      background: linear-gradient(135deg, #b8f7db, #9ec5ff 55%, #ffe0a3);
+      box-shadow: 0 18px 42px rgba(10, 132, 255, .14);
+    }
+    .goal-hero small {
+      display: block;
+      font-weight: 850;
+      opacity: .72;
+      margin-bottom: 8px;
+    }
+    .goal-hero strong {
+      display: block;
+      font-size: clamp(32px, 5vw, 52px);
+      line-height: 1;
+    }
+    .goal-hero span {
+      display: block;
+      margin-top: 9px;
+      line-height: 1.4;
+      font-weight: 650;
+    }
+    .goal-circle {
+      --goal: 0;
+      width: 142px;
+      height: 142px;
+      border-radius: 50%;
+      background: conic-gradient(var(--brand) calc(var(--goal) * 1%), #e7efec 0);
+      display: grid;
+      place-items: center;
+      margin: 0 auto;
+    }
+    .goal-circle span {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: #fff;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--ink);
+      font-weight: 950;
+      line-height: 1.05;
+      padding: 8px;
+    }
     .insight-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -935,11 +986,14 @@
       .score-ring {
         background: conic-gradient(var(--brand) calc(var(--p) * 1%), rgba(255, 255, 255, .12) 0);
       }
-      .score-ring span, .mix-donut::after, .savings-circle span {
+      .score-ring span, .mix-donut::after, .savings-circle span, .goal-circle span {
         background: #1c1c1e;
       }
-      .savings-circle {
+      .savings-circle, .goal-circle {
         background: conic-gradient(var(--brand) calc(var(--save) * 1%), rgba(255, 255, 255, .12) 0);
+      }
+      .goal-circle {
+        background: conic-gradient(var(--brand) calc(var(--goal) * 1%), rgba(255, 255, 255, .12) 0);
       }
       .bar-track {
         background: rgba(255, 255, 255, .10);
@@ -1019,6 +1073,7 @@
       .mix-title { font-size: 18px; }
       .insight-grid { grid-template-columns: 1fr; }
       .savings-circle-wrap { grid-template-columns: 1fr; text-align: center; }
+      .goal-hero { padding: 16px; border-radius: 22px; }
       .freedom-hero { padding: 16px; border-radius: 22px; }
     }
   </style>
@@ -1033,6 +1088,7 @@
       <nav class="tabs" aria-label="Primary navigation">
         <button class="tab active" data-tab="find">Find Funds</button>
         <button class="tab" data-tab="loan">Loan Freedom</button>
+        <button class="tab" data-tab="freedom">Freedom Goals</button>
         <button class="tab" data-tab="sip">SIP Challenge</button>
         <button class="tab" data-tab="compare">Compare</button>
         <button class="tab" data-tab="learn">Learn</button>
@@ -1267,6 +1323,94 @@
       </div>
     </section>
 
+    <section id="freedom" class="section" aria-labelledby="freedom-title">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="freedom-title">Freedom Goals</h2>
+          <p class="section-copy">Plan your first ₹1 crore or financial freedom corpus using simple assumptions.</p>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="panel wizard">
+          <div>
+            <h3 class="step-title">Choose goal</h3>
+            <select class="input" id="freedomGoalType">
+              <option value="crore">First ₹1 Crore</option>
+              <option value="freedom">Financial Freedom</option>
+            </select>
+          </div>
+          <div id="croreFields" class="wizard">
+            <div class="form-row">
+              <div>
+                <label for="croreCurrent">Current investments</label>
+                <input class="input" id="croreCurrent" inputmode="numeric" value="100000">
+              </div>
+              <div>
+                <label for="croreSip">Monthly SIP</label>
+                <input class="input" id="croreSip" inputmode="numeric" value="25000">
+              </div>
+            </div>
+            <div class="form-row">
+              <div>
+                <label for="croreReturn">Assumed return (%)</label>
+                <select class="input" id="croreReturn">
+                  <option value="8">Conservative 8%</option>
+                  <option value="10" selected>Balanced 10%</option>
+                  <option value="12">Growth 12%</option>
+                </select>
+              </div>
+              <div>
+                <label for="croreTarget">Target amount</label>
+                <input class="input" id="croreTarget" inputmode="numeric" value="10000000">
+              </div>
+            </div>
+          </div>
+          <div id="freedomFields" class="wizard" style="display:none">
+            <div class="form-row">
+              <div>
+                <label for="monthlyExpense">Monthly expenses</label>
+                <input class="input" id="monthlyExpense" inputmode="numeric" value="100000">
+              </div>
+              <div>
+                <label for="freedomMultiplier">Corpus multiplier</label>
+                <select class="input" id="freedomMultiplier">
+                  <option value="25">25x annual expenses</option>
+                  <option value="30" selected>30x annual expenses</option>
+                  <option value="40">40x annual expenses</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div>
+                <label for="freedomCurrent">Current investments</label>
+                <input class="input" id="freedomCurrent" inputmode="numeric" value="500000">
+              </div>
+              <div>
+                <label for="freedomSip">Monthly SIP</label>
+                <input class="input" id="freedomSip" inputmode="numeric" value="50000">
+              </div>
+            </div>
+            <div>
+              <label for="freedomReturn">Assumed return (%)</label>
+              <select class="input" id="freedomReturn">
+                <option value="8">Conservative 8%</option>
+                <option value="10" selected>Balanced 10%</option>
+                <option value="12">Growth 12%</option>
+              </select>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary" id="runFreedomBtn">Calculate Goal</button>
+          </div>
+          <div id="freedomError"></div>
+          <div class="notice">This calculator uses assumed returns. It is for planning only and does not guarantee a future corpus.</div>
+        </div>
+        <div id="freedomResults" class="panel">
+          <div class="empty">Choose a goal and calculate your path.</div>
+        </div>
+      </div>
+    </section>
+
     <section id="learn" class="section" aria-labelledby="learn-title">
       <div class="section-head">
         <div>
@@ -1284,6 +1428,7 @@
         <article class="learn-card"><h3>Growth vs IDCW</h3><p>Growth plans keep gains invested in the fund. IDCW plans may distribute income, so NAV return comparison can be less straightforward.</p></article>
         <article class="learn-card"><h3>Fund Score</h3><p>The score combines historical return, consistency, volatility, drawdown, and available history. It is an analytical shortlist score, not advice.</p></article>
         <article class="learn-card"><h3>Loan Freedom</h3><p>This planner compares an EMI-only path with a separate SIP side corpus using assumed returns. It does not decide whether you should prepay.</p></article>
+        <article class="learn-card"><h3>Freedom Goals</h3><p>These calculators estimate time to a target corpus from current investments, SIP amount, and assumed returns. Results are planning estimates.</p></article>
         <article class="learn-card"><h3>Risk reminder</h3><p>Market funds can lose value. Category fit and history help analysis, but they cannot remove uncertainty.</p></article>
       </div>
       <div class="notice">
@@ -1345,6 +1490,7 @@
       wireSearch("sipSearch", "sipSearchResults", "sipSearchStatus", addSipFund, 3);
       wireSearch("compareSearch", "compareSearchResults", "compareSearchStatus", addCompareFund, 4);
       updateAmountUI();
+      updateFreedomFields();
       prefetchRecommendationSearches();
     }
 
@@ -1356,7 +1502,9 @@
         "runSipBtn", "sipStatus", "sipError", "sipResults", "compareSearch", "compareSearchResults",
         "compareSearchStatus", "compareSelected", "runCompareBtn", "compareStatus", "compareError", "compareResults",
         "loanType", "loanOutstanding", "loanEmi", "loanRate", "loanYears", "loanSip", "sipReturn",
-        "runLoanBtn", "loanError", "loanResults"
+        "runLoanBtn", "loanError", "loanResults", "freedomGoalType", "croreFields", "freedomFields",
+        "croreCurrent", "croreSip", "croreReturn", "croreTarget", "monthlyExpense", "freedomMultiplier",
+        "freedomCurrent", "freedomSip", "freedomReturn", "runFreedomBtn", "freedomError", "freedomResults"
       ].forEach(id => { els[id] = document.getElementById(id); });
     }
 
@@ -1438,6 +1586,8 @@
       els.runSipBtn.addEventListener("click", runSipChallenge);
       els.runCompareBtn.addEventListener("click", runCompare);
       els.runLoanBtn.addEventListener("click", runLoanPlanner);
+      els.freedomGoalType.addEventListener("change", updateFreedomFields);
+      els.runFreedomBtn.addEventListener("click", runFreedomGoals);
     }
 
     function updateAmountUI() {
@@ -2277,6 +2427,91 @@
       if (!years) return `${months} month${months === 1 ? "" : "s"}`;
       if (!rem) return `${years} year${years === 1 ? "" : "s"}`;
       return `${years}y ${rem}m`;
+    }
+
+    /* ---------- Freedom goals ---------- */
+    function updateFreedomFields() {
+      const isCrore = els.freedomGoalType.value === "crore";
+      els.croreFields.style.display = isCrore ? "grid" : "none";
+      els.freedomFields.style.display = isCrore ? "none" : "grid";
+      els.freedomResults.innerHTML = `<div class="empty">Choose a goal and calculate your path.</div>`;
+      showError(els.freedomError, "");
+    }
+
+    function runFreedomGoals() {
+      showError(els.freedomError, "");
+      try {
+        if (els.freedomGoalType.value === "crore") {
+          const input = {
+            current: readMoney(els.croreCurrent.value),
+            sip: readMoney(els.croreSip.value),
+            rate: Number(els.croreReturn.value),
+            target: readMoney(els.croreTarget.value)
+          };
+          validateGoalInput(input.current, input.sip, input.rate, input.target);
+          renderGoalResult("First ₹1 Crore", input, calculateGoalMonths(input), input.target);
+        } else {
+          const target = readMoney(els.monthlyExpense.value) * 12 * Number(els.freedomMultiplier.value);
+          const input = {
+            current: readMoney(els.freedomCurrent.value),
+            sip: readMoney(els.freedomSip.value),
+            rate: Number(els.freedomReturn.value),
+            target
+          };
+          validateGoalInput(input.current, input.sip, input.rate, input.target);
+          renderGoalResult("Financial Freedom", input, calculateGoalMonths(input), target);
+        }
+      } catch (error) {
+        showError(els.freedomError, error.message || "Could not calculate this goal.");
+      }
+    }
+
+    function validateGoalInput(current, sip, rate, target) {
+      if (current < 0 || Number.isNaN(current)) throw new Error("Enter valid current investments.");
+      if (!sip || sip < 100) throw new Error("Enter a valid monthly SIP.");
+      if (!rate || rate <= 0) throw new Error("Choose a valid assumed return.");
+      if (!target || target <= current) throw new Error("Target should be higher than current investments.");
+    }
+
+    function calculateGoalMonths(input) {
+      const monthlyRate = input.rate / 100 / 12;
+      let corpus = input.current;
+      let months = 0;
+      const maxMonths = 12 * 80;
+      while (corpus < input.target && months < maxMonths) {
+        corpus = corpus * (1 + monthlyRate) + input.sip;
+        months++;
+      }
+      return { months, corpus };
+    }
+
+    function renderGoalResult(title, input, result, target) {
+      const progress = Math.round(clamp(input.current / target * 100, 0, 100));
+      const remaining = Math.max(0, target - input.current);
+      const totalInvested = input.current + input.sip * result.months;
+      els.freedomResults.innerHTML = `
+        <div class="goal-result">
+          <div class="goal-hero">
+            <small>${escapeHTML(title)}</small>
+            <strong>${escapeHTML(monthsLabel(result.months))}</strong>
+            <span>At an assumed ${escapeHTML(input.rate)}% annual return and ${escapeHTML(INR.format(input.sip))}/month SIP, this is the estimated time to reach ${escapeHTML(INR.format(target))}.</span>
+          </div>
+          <div class="savings-circle-wrap">
+            <div class="goal-circle" style="--goal:${progress}"><span>${progress}%<br>ready</span></div>
+            <div class="savings-copy">
+              <strong>${escapeHTML(INR.format(remaining))} left to target</strong>
+              <p>Current investments are compared with your target corpus. Growth is assumption-based and not guaranteed.</p>
+            </div>
+          </div>
+          <div class="insight-grid">
+            <div class="insight"><small>Target corpus</small><strong>${escapeHTML(INR.format(target))}</strong></div>
+            <div class="insight"><small>Current corpus</small><strong>${escapeHTML(INR.format(input.current))}</strong></div>
+            <div class="insight"><small>Monthly SIP</small><strong>${escapeHTML(INR.format(input.sip))}</strong></div>
+            <div class="insight"><small>Total invested by target</small><strong>${escapeHTML(INR.format(totalInvested))}</strong></div>
+          </div>
+          <div class="notice">Planning view only. Returns, inflation, taxes, and future income can change the result.</div>
+        </div>
+      `;
     }
 
     /* ---------- Charts and utilities ---------- */
