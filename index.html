@@ -1412,7 +1412,7 @@
     }
 
     function renderStudyMix(funds, amount) {
-      const weights = studyMixWeights(funds);
+      const weights = studyMixWeights(funds, amount);
       const colors = ["#007a5a", "#f6b944", "#4f8cff", "#d95f59"];
       let cursor = 0;
       const stops = weights.map((item, index) => {
@@ -1425,7 +1425,7 @@
           <div class="mix-donut" style="background:conic-gradient(${escapeAttr(stops)})"></div>
           <div>
             <h3 class="mix-title">Analysis View</h3>
-            <div class="meta-line">This view shows filter-based weights across the shortlisted funds using historical NAV analysis. It is not a recommendation or advice to invest.</div>
+            <div class="meta-line">${escapeHTML(analysisViewCopy(weights.length, amount))}</div>
             <div class="mix-list">
               ${weights.map((item, index) => `
                 <div class="mix-item">
@@ -1440,8 +1440,11 @@
       `;
     }
 
-    function studyMixWeights(funds) {
-      const raw = funds.map(fund => ({
+    function studyMixWeights(funds, amount) {
+      const count = suggestedFundCount(amount, funds.length);
+      const selectedFunds = funds.slice(0, count);
+      if (count === 1) return [{ fund: selectedFunds[0], percent: 100 }];
+      const raw = selectedFunds.map(fund => ({
         fund,
         weight: Math.max(12, fund.score + (fund.profileFit || 0) - riskPenaltyForMix(fund))
       }));
@@ -1452,6 +1455,19 @@
         remaining -= percent;
         return { fund: item.fund, percent };
       });
+    }
+
+    function suggestedFundCount(amount, availableCount) {
+      if (amount < 1500) return 1;
+      if (amount < 5000) return Math.min(2, availableCount);
+      return Math.min(3, availableCount);
+    }
+
+    function analysisViewCopy(count, amount) {
+      if (count === 1) {
+        return `For ${INR.format(amount)}/month, this view keeps the analysis simple and shows only the closest filter match. It is not a recommendation or advice to invest.`;
+      }
+      return `This view shows filter-based weights across ${count} shortlisted funds using historical NAV analysis. It is not a recommendation or advice to invest.`;
     }
 
     function riskPenaltyForMix(fund) {
