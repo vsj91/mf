@@ -270,8 +270,31 @@
       gap: 12px;
       flex-wrap: wrap;
     }
+    .seo-tools {
+      margin: 22px 0 0;
+    }
+    .seo-tools summary {
+      list-style: none;
+      cursor: pointer;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, .78);
+      padding: 14px 16px;
+      font-weight: 900;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .seo-tools summary::-webkit-details-marker { display: none; }
+    .seo-tools summary::after {
+      content: "+";
+      color: var(--brand);
+      font-size: 20px;
+      line-height: 1;
+    }
+    .seo-tools[open] summary::after { content: "−"; }
     .seo-strip {
-      margin: 8px 0 20px;
+      margin-top: 12px;
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 12px;
@@ -1217,7 +1240,7 @@
         background: rgba(18, 18, 20, .78);
         border-bottom-color: rgba(255, 255, 255, .10);
       }
-      .tabs, .hero-panel, .panel, .study-mix, .period-panel, .seo-card {
+      .tabs, .hero-panel, .panel, .study-mix, .period-panel, .seo-card, .seo-tools summary {
         background: rgba(28, 28, 30, .72);
         border-color: rgba(255, 255, 255, .12);
         box-shadow: var(--shadow);
@@ -1460,24 +1483,6 @@
           </div>
         </div>
       </aside>
-    </section>
-    <section class="seo-strip" aria-label="PlanSIP tools">
-      <article class="seo-card">
-        <h2>SIP Calculator India</h2>
-        <p>Estimate monthly SIP growth, replay historical SIP outcomes, and study how compounding may build your corpus.</p>
-      </article>
-      <article class="seo-card">
-        <h2>Mutual Fund Finder</h2>
-        <p>Shortlist funds by goal, duration, risk, return preference, category fit, and real historical NAV behavior.</p>
-      </article>
-      <article class="seo-card">
-        <h2>Loan Freedom Calculator</h2>
-        <p>Compare an EMI-only path with a separate SIP side corpus and estimate possible loan closure timing.</p>
-      </article>
-      <article class="seo-card">
-        <h2>Gold/Silver Fund Tracker</h2>
-        <p>Study gold and silver mutual fund returns using MFapi NAV history without fake return data.</p>
-      </article>
     </section>
   </div>
 
@@ -1890,6 +1895,27 @@
       <div class="notice">
         This tool is for educational and analytical purposes only. Mutual fund investments are subject to market risks. Historical returns do not guarantee future performance. Consider consulting a SEBI-registered investment adviser before investing.
       </div>
+      <details class="seo-tools">
+        <summary>PlanSIP tools and calculators</summary>
+        <section class="seo-strip" aria-label="PlanSIP tools">
+          <article class="seo-card">
+            <h2>SIP Calculator India</h2>
+            <p>Estimate monthly SIP growth, replay historical SIP outcomes, and study how compounding may build your corpus.</p>
+          </article>
+          <article class="seo-card">
+            <h2>Mutual Fund Finder</h2>
+            <p>Shortlist funds by goal, duration, risk, return preference, category fit, and real historical NAV behavior.</p>
+          </article>
+          <article class="seo-card">
+            <h2>Loan Freedom Calculator</h2>
+            <p>Compare an EMI-only path with a separate SIP side corpus and estimate possible loan closure timing.</p>
+          </article>
+          <article class="seo-card">
+            <h2>Gold/Silver Fund Tracker</h2>
+            <p>Study gold and silver mutual fund returns using MFapi NAV history without fake return data.</p>
+          </article>
+        </section>
+      </details>
     </section>
   </main>
 
