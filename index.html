@@ -2180,22 +2180,25 @@
       const closureBalance = plan.closure ? plan.closure.balance : plan.points.at(-1)?.balance || 0;
       const closureCorpus = plan.closure ? plan.closure.corpus : plan.points.at(-1)?.corpus || 0;
       const savePercent = plan.naturalInterest ? Math.round(clamp(plan.savedInterest / plan.naturalInterest * 100, 0, 100)) : 0;
+      const monthsEarlier = plan.closure ? Math.max(0, plan.naturalMonths - plan.closureMonth) : 0;
       els.loanResults.innerHTML = `
         <div class="freedom-card">
           <div class="freedom-hero">
-            <small>Possible study point</small>
-            <strong>${escapeHTML(heroTitle)}</strong>
-            <span>${escapeHTML(heroText)}</span>
+            <small>${canStudyClosure ? "Possible earlier closure" : "Possible study point"}</small>
+            <strong>${escapeHTML(canStudyClosure ? monthsLabel(monthsEarlier) + " earlier" : heroTitle)}</strong>
+            <span>${escapeHTML(canStudyClosure ? `If the side corpus is used for a loan prepayment study around ${heroTitle}, the loan could be compared for closure about ${monthsLabel(monthsEarlier)} before the regular EMI-only path.` : heroText)}</span>
           </div>
           <div class="savings-circle-wrap">
             <div class="savings-circle" style="--save:${savePercent}"><span>${savePercent}%<br>saved</span></div>
             <div class="savings-copy">
-              <strong>${escapeHTML(INR.format(plan.savedInterest))} potential interest avoided</strong>
-              <p>Compared with the regular EMI-only path, this is the estimated future loan interest that may be avoided if the side corpus is studied for closure at the shown point.</p>
+              <strong>${escapeHTML(INR.format(plan.savedInterest))} interest potentially saved</strong>
+              <p>Compared with paying only the regular EMI, this estimates the future loan interest that may be avoided if the side corpus is used to study prepayment at the shown point.</p>
             </div>
           </div>
           <div class="insight-grid">
             <div class="insight"><small>Current payoff path</small><strong>${escapeHTML(monthsLabel(plan.naturalMonths))}</strong></div>
+            <div class="insight"><small>Possible closure study point</small><strong>${escapeHTML(canStudyClosure ? heroTitle : "Not reached")}</strong></div>
+            <div class="insight"><small>Time potentially saved</small><strong>${escapeHTML(canStudyClosure ? monthsLabel(monthsEarlier) : "Not available")}</strong></div>
             <div class="insight"><small>Future interest on EMI path</small><strong>${escapeHTML(INR.format(plan.naturalInterest))}</strong></div>
             <div class="insight"><small>Side corpus at study point</small><strong>${escapeHTML(INR.format(closureCorpus))}</strong></div>
             <div class="insight"><small>Loan balance at study point</small><strong>${escapeHTML(INR.format(closureBalance))}</strong></div>
