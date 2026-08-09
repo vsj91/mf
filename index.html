@@ -1266,7 +1266,25 @@
       .bar-row { grid-template-columns: 1fr; gap: 6px; }
       .return-row { grid-template-columns: 1fr; gap: 6px; }
       .chip span { max-width: 220px; }
-      .metrics.primary { grid-template-columns: 1fr; }
+      .metrics.primary {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 7px;
+      }
+      .metrics.primary .metric {
+        min-height: 58px;
+        padding: 9px 7px;
+        border-radius: 14px;
+        text-align: center;
+      }
+      .metrics.primary .metric small {
+        font-size: 10px;
+        line-height: 1.15;
+        margin-bottom: 3px;
+      }
+      .metrics.primary .metric strong {
+        font-size: 13px;
+        line-height: 1.15;
+      }
       .fund-top { align-items: center; }
       .section { padding-top: 18px; }
       .study-mix { padding: 14px; border-radius: 22px; }
