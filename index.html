@@ -1266,6 +1266,24 @@
       .bar-row { grid-template-columns: 1fr; gap: 6px; }
       .return-row { grid-template-columns: 1fr; gap: 6px; }
       .chip span { max-width: 220px; }
+      .metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px;
+      }
+      .metric {
+        min-height: 58px;
+        padding: 9px 8px;
+        border-radius: 14px;
+      }
+      .metric small {
+        font-size: 10px;
+        line-height: 1.15;
+        margin-bottom: 3px;
+      }
+      .metric strong {
+        font-size: 13px;
+        line-height: 1.15;
+      }
       .metrics.primary {
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 7px;
