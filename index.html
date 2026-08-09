@@ -1116,6 +1116,11 @@
           <div class="segmented" id="riskChoices"></div>
         </div>
 
+        <div>
+          <h3 class="step-title">Return preference</h3>
+          <div class="segmented" id="returnChoices"></div>
+        </div>
+
         <div class="actions desktop-action">
           <div class="status" id="findStatus"><span class="spinner"></span><span>Analysing funds from MFapi...</span></div>
           <button class="btn btn-primary" id="findFundsBtn">Find My Funds</button>
@@ -1313,11 +1318,17 @@
       { id: "10+", label: "10+ years", years: 12 }
     ];
     const risks = ["Low", "Moderate", "High", "Very High"];
+    const returnPrefs = [
+      { id: "stable", label: "Stable" },
+      { id: "moderate", label: "Moderate returns" },
+      { id: "high", label: "High returns" }
+    ];
 
     const state = {
       goal: "wealth",
       duration: "5-10",
       risk: "Moderate",
+      returnPref: "moderate",
       sipSelected: [],
       compareSelected: []
     };
@@ -1339,7 +1350,7 @@
 
     function cacheEls() {
       [
-        "goalSelect", "durationChoices", "riskChoices", "monthlyAmount", "monthlySlider", "monthlyPretty",
+        "goalSelect", "durationChoices", "riskChoices", "returnChoices", "monthlyAmount", "monthlySlider", "monthlyPretty",
         "findFundsBtn", "findFundsMobileBtn", "findStatus", "findError", "recommendationResults",
         "sipSearch", "sipSearchResults", "sipSearchStatus", "sipSelected", "sipAmount", "sipYears",
         "runSipBtn", "sipStatus", "sipError", "sipResults", "compareSearch", "compareSearchResults",
@@ -1359,6 +1370,9 @@
       `).join("");
       els.riskChoices.innerHTML = risks.map(risk => `
         <button class="segment ${risk === state.risk ? "selected" : ""}" data-risk="${escapeAttr(risk)}" type="button">${escapeHTML(risk)}</button>
+      `).join("");
+      els.returnChoices.innerHTML = returnPrefs.map(pref => `
+        <button class="segment ${pref.id === state.returnPref ? "selected" : ""}" data-return-pref="${escapeAttr(pref.id)}" type="button">${escapeHTML(pref.label)}</button>
       `).join("");
     }
 
@@ -1400,6 +1414,13 @@
         const button = event.target.closest("[data-risk]");
         if (!button) return;
         state.risk = button.dataset.risk;
+        renderChoices();
+        prefetchRecommendationSearches();
+      });
+      els.returnChoices.addEventListener("click", event => {
+        const button = event.target.closest("[data-return-pref]");
+        if (!button) return;
+        state.returnPref = button.dataset.returnPref;
         renderChoices();
         prefetchRecommendationSearches();
       });
@@ -1619,7 +1640,7 @@
             const analysis = await getAnalysedFund(candidate);
             if (!analysis) return null;
             analysis.profileFit = profileFitScore(analysis, profile);
-            analysis.finalRank = analysis.score + analysis.profileFit;
+            analysis.finalRank = analysis.score + analysis.profileFit + returnPreferenceScore(analysis, profile.returnPref);
             return analysis;
           } catch (_) {
             return null;
@@ -1640,7 +1661,8 @@
 
     function getProfile() {
       const duration = durations.find(d => d.id === state.duration) || durations[2];
-      return { goal: state.goal, duration, risk: state.risk };
+      const returnPref = state.returnPref || "moderate";
+      return { goal: state.goal, duration, risk: state.risk, returnPref };
     }
 
     const prefetchRecommendationSearches = debounce(async () => {
@@ -1657,6 +1679,8 @@
       if (profile.risk === "Low" || profile.duration.id === "1-3" || profile.goal === "emergency") base = low;
       if (profile.risk === "High") base = high;
       if (profile.risk === "Very High") base = veryHigh;
+      if (profile.returnPref === "stable") base = base.concat(["balanced advantage direct growth", "large cap direct growth", "short duration direct growth"]);
+      if (profile.returnPref === "high") base = base.concat(["mid cap direct growth", "small cap direct growth", "flexi cap direct growth"]);
       if (profile.duration.id === "3-5" && profile.risk !== "Low") base = ["balanced advantage direct growth", "hybrid direct growth", "large cap direct growth", "index direct growth"];
       if (profile.duration.id === "10+" && profile.risk !== "Low") base = base.concat(["elss direct growth", "nifty 50 index direct growth"]);
       return [...new Set(base)];
@@ -1697,16 +1721,27 @@
       return fit;
     }
 
+    function returnPreferenceScore(fund, preference) {
+      const longReturn = firstNumber(fund.returns.y10, fund.returns.y5, fund.returns.y3, fund.returns.y1);
+      if (preference === "stable") {
+        return (1 - scale(fund.volatility, 0.04, 0.24)) * 18 + (1 - scale(Math.abs(fund.maxDrawdown || 0), 0.03, 0.45)) * 12;
+      }
+      if (preference === "high") {
+        return scale(longReturn, 0.04, 0.22) * 24 + scale(fund.volatility, 0.06, 0.26) * 4;
+      }
+      return scale(longReturn, 0.02, 0.18) * 12 + (1 - scale(fund.volatility, 0.04, 0.24)) * 8;
+    }
+
     function renderRecommendations(funds, profile, amount) {
       const goal = goals.find(g => g.id === profile.goal);
       els.recommendationResults.innerHTML = `
         <div class="section-head" style="margin-top:24px">
           <div>
             <h2 class="section-title">Your Shortlist</h2>
-            <p class="section-copy">${escapeHTML(goal ? goal.title : "Your goal")} • ${escapeHTML(profile.duration.label)} • ${escapeHTML(profile.risk)} risk • ${escapeHTML(INR.format(amount))}/month</p>
+            <p class="section-copy">${escapeHTML(goal ? goal.title : "Your goal")} • ${escapeHTML(profile.duration.label)} • ${escapeHTML(profile.risk)} risk • ${escapeHTML(returnPreferenceLabel(profile.returnPref))} • ${escapeHTML(INR.format(amount))}/month</p>
           </div>
         </div>
-        <div class="notice">Based on your selected goal, time horizon, and risk level, here are funds whose category and historical NAV behavior match your filters. This is not investment advice.</div>
+        <div class="notice">Based on your selected goal, time horizon, risk level, and return preference, here are funds whose category and historical NAV behavior match your filters. This is not investment advice and does not predict future returns.</div>
         ${renderStudyMix(funds, amount)}
         <div class="results-grid">
           ${funds.map((fund, index) => renderFundCard(fund, profile, index === 0)).join("")}
@@ -1900,7 +1935,13 @@
       if (fund.returns.y5 != null || fund.returns.y10 != null) bits.push("it has usable long-term NAV history");
       if (fund.volatility != null) bits.push(`${riskLabel(fund).toLowerCase()} historical volatility`);
       bits.push(`its category/name fits a ${profile.risk.toLowerCase()} risk, ${profile.duration.label} shortlist`);
+      bits.push(`${returnPreferenceLabel(profile.returnPref).toLowerCase()} preference`);
       return "Why it matches: " + bits.slice(0, 4).join(", ") + ".";
+    }
+
+    function returnPreferenceLabel(value) {
+      const pref = returnPrefs.find(item => item.id === value);
+      return pref ? pref.label : "Moderate returns";
     }
 
     function riskLabel(fund) {
