@@ -1809,20 +1809,45 @@
     }
 
     function applyLanguage(code) {
+      if (code === "en") {
+        resetToEnglish();
+        return;
+      }
+      sessionStorage.removeItem("ffi_resetting_english");
       const combo = document.querySelector(".goog-te-combo");
       if (!combo) return;
-      if (code === "en") {
-        clearTranslateCookie();
-        combo.value = "";
-      } else {
-        combo.value = code;
-      }
+      combo.value = code;
       combo.dispatchEvent(new Event("change"));
       document.documentElement.lang = code;
     }
 
+    function resetToEnglish() {
+      const wasTranslated = hasTranslateCookie() || document.querySelector(".translated-ltr, .translated-rtl");
+      clearTranslateCookie();
+      document.documentElement.lang = "en";
+      const alreadyResetting = sessionStorage.getItem("ffi_resetting_english") === "1";
+      if (alreadyResetting) {
+        sessionStorage.removeItem("ffi_resetting_english");
+        return;
+      }
+      if (wasTranslated) {
+        sessionStorage.setItem("ffi_resetting_english", "1");
+        window.location.reload();
+      }
+    }
+
+    function hasTranslateCookie() {
+      return document.cookie.split(";").some(item => item.trim().startsWith("googtrans="));
+    }
+
     function clearTranslateCookie() {
-      ["googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/", "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=.github.io"].forEach(cookie => {
+      [
+        "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/",
+        "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=vsj91.github.io",
+        "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=.vsj91.github.io",
+        "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=github.io",
+        "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=.github.io"
+      ].forEach(cookie => {
         document.cookie = cookie;
       });
     }
