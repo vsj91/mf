@@ -478,6 +478,59 @@
       color: var(--ink);
       font-weight: 900;
     }
+    .period-panel {
+      margin-top: 16px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, .86);
+      padding: 18px;
+      box-shadow: 0 16px 42px rgba(29, 29, 31, .06);
+    }
+    .period-controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 14px 0;
+    }
+    .period-btn {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--muted);
+      padding: 8px 12px;
+      font-weight: 850;
+      transition: .18s ease;
+    }
+    .period-btn.active {
+      color: #fff;
+      border-color: var(--brand);
+      background: var(--brand);
+    }
+    .return-chart {
+      display: grid;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .return-row {
+      display: grid;
+      grid-template-columns: minmax(110px, 1fr) minmax(130px, 2fr) 86px;
+      gap: 10px;
+      align-items: center;
+      font-size: 13px;
+    }
+    .return-track {
+      height: 16px;
+      border-radius: 999px;
+      background: #edf3f1;
+      overflow: hidden;
+    }
+    .return-fill {
+      width: 0;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--brand), var(--accent));
+      transition: width .28s ease;
+    }
     .freedom-card {
       display: grid;
       gap: 16px;
@@ -934,7 +987,7 @@
         background: rgba(18, 18, 20, .78);
         border-bottom-color: rgba(255, 255, 255, .10);
       }
-      .tabs, .hero-panel, .panel, .study-mix {
+      .tabs, .hero-panel, .panel, .study-mix, .period-panel {
         background: rgba(28, 28, 30, .72);
         border-color: rgba(255, 255, 255, .12);
         box-shadow: var(--shadow);
@@ -944,7 +997,7 @@
         background: linear-gradient(135deg, #6ee7b7, var(--brand-2));
         box-shadow: 0 16px 38px rgba(18, 184, 134, .22);
       }
-      .eyebrow, .mini-row, .choice, .fund-card, .metric, .learn-card, .insight, .savings-circle-wrap,
+      .eyebrow, .mini-row, .choice, .fund-card, .metric, .learn-card, .insight, .savings-circle-wrap, .period-btn,
       .search-item, .chip, .chart-wrap, .table-wrap, .input, .segment {
         background: rgba(28, 28, 30, .86);
         border-color: rgba(255, 255, 255, .12);
@@ -995,7 +1048,7 @@
       .goal-circle {
         background: conic-gradient(var(--brand) calc(var(--goal) * 1%), rgba(255, 255, 255, .12) 0);
       }
-      .bar-track {
+      .bar-track, .return-track {
         background: rgba(255, 255, 255, .10);
       }
       .timeline-track {
@@ -1063,6 +1116,7 @@
       .mini-row { grid-template-columns: 40px 1fr; }
       .mini-row .pill { grid-column: 2; width: fit-content; }
       .bar-row { grid-template-columns: 1fr; gap: 6px; }
+      .return-row { grid-template-columns: 1fr; gap: 6px; }
       .chip span { max-width: 220px; }
       .metrics.primary { grid-template-columns: 1fr; }
       .fund-top { align-items: center; }
@@ -1468,6 +1522,15 @@
       { id: "moderate", label: "Moderate returns" },
       { id: "high", label: "High returns" }
     ];
+    const returnPeriods = [
+      { id: "m1", label: "1M", months: 1, title: "1M return" },
+      { id: "m3", label: "3M", months: 3, title: "3M return" },
+      { id: "m6", label: "6M", months: 6, title: "6M return" },
+      { id: "y1", label: "1Y", years: 1, title: "1Y annualized" },
+      { id: "y2", label: "2Y", years: 2, title: "2Y CAGR" },
+      { id: "y3", label: "3Y", years: 3, title: "3Y CAGR" },
+      { id: "y5", label: "5Y", years: 5, title: "5Y CAGR" }
+    ];
 
     const state = {
       goal: "wealth",
@@ -1475,7 +1538,8 @@
       risk: "Moderate",
       returnPref: "moderate",
       sipSelected: [],
-      compareSelected: []
+      compareSelected: [],
+      lastRecommendations: []
     };
 
     const els = {};
@@ -1652,7 +1716,7 @@
     }
 
     async function getAnalysedFund(candidate) {
-      const cacheKey = "ffi_analysis_" + candidate.schemeCode;
+      const cacheKey = "ffi_analysis_v3_" + candidate.schemeCode;
       const cached = readCache(cacheKey, ANALYSIS_TTL);
       if (cached) return hydrateAnalysis(cached);
       const detail = await getFundDetails(candidate.schemeCode);
@@ -1705,6 +1769,7 @@
         type: analysis.type,
         latest: analysis.latest ? { date: analysis.latest.date.toISOString(), nav: analysis.latest.nav } : null,
         returns: analysis.returns,
+        periodReturns: analysis.periodReturns,
         volatility: analysis.volatility,
         consistency: analysis.consistency,
         maxDrawdown: analysis.maxDrawdown,
@@ -1884,6 +1949,7 @@
 
     function renderRecommendations(funds, profile, amount) {
       const goal = goals.find(g => g.id === profile.goal);
+      state.lastRecommendations = funds;
       els.recommendationResults.innerHTML = `
         <div class="section-head" style="margin-top:24px">
           <div>
@@ -1893,6 +1959,7 @@
         </div>
         <div class="notice">Based on your selected goal, time horizon, risk level, and return preference, here are funds whose category and historical NAV behavior match your filters. This is not investment advice and does not predict future returns.</div>
         ${renderStudyMix(funds, amount)}
+        ${renderPeriodComparison(funds)}
         <div class="results-grid">
           ${funds.map((fund, index) => renderFundCard(fund, profile, index === 0)).join("")}
         </div>
@@ -1905,7 +1972,76 @@
           button.textContent = detail.classList.contains("show") ? "Hide detailed analysis" : "View detailed analysis";
         });
       });
+      els.recommendationResults.querySelectorAll("[data-period]").forEach(button => {
+        button.addEventListener("click", () => updateReturnChart(button.dataset.period));
+      });
       els.recommendationResults.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function renderPeriodComparison(funds) {
+      const defaultPeriod = "y3";
+      return `
+        <section class="period-panel" aria-label="Historical return comparison">
+          <div>
+            <h3 class="mix-title">Return Comparison</h3>
+            <div class="meta-line">Short periods show NAV return. 1Y and above are annualized from history.</div>
+          </div>
+          <div class="period-controls" role="group" aria-label="Choose return period">
+            ${returnPeriods.map(period => `
+              <button class="period-btn ${period.id === defaultPeriod ? "active" : ""}" type="button" data-period="${escapeAttr(period.id)}">${escapeHTML(period.label)}</button>
+            `).join("")}
+          </div>
+          <div class="return-chart" data-return-chart>${renderReturnChartRows(funds, defaultPeriod)}</div>
+          <div class="table-wrap" style="margin-top:14px">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fund</th>
+                  ${returnPeriods.map(period => `<th>${escapeHTML(period.label)}</th>`).join("")}
+                </tr>
+              </thead>
+              <tbody>
+                ${funds.map(fund => `
+                  <tr>
+                    <td>${escapeHTML(shortName(fund.name))}</td>
+                    ${returnPeriods.map(period => `<td>${escapeHTML(formatPercent(fund.periodReturns?.[period.id]))}</td>`).join("")}
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      `;
+    }
+
+    function updateReturnChart(periodId) {
+      const chart = els.recommendationResults.querySelector("[data-return-chart]");
+      if (!chart) return;
+      els.recommendationResults.querySelectorAll("[data-period]").forEach(button => {
+        button.classList.toggle("active", button.dataset.period === periodId);
+      });
+      chart.innerHTML = renderReturnChartRows(state.lastRecommendations, periodId);
+    }
+
+    function renderReturnChartRows(funds, periodId) {
+      const period = returnPeriods.find(item => item.id === periodId) || returnPeriods[5];
+      const rows = funds.map(fund => ({ fund, value: fund.periodReturns?.[period.id] }));
+      const maxAbs = Math.max(.01, ...rows.map(row => Math.abs(row.value || 0)));
+      return rows.map(row => {
+        const width = row.value == null || Number.isNaN(row.value) ? 0 : Math.max(5, Math.round(Math.abs(row.value) / maxAbs * 100));
+        const style = row.value == null || Number.isNaN(row.value)
+          ? "width:0"
+          : `width:${width}%; background:${row.value < 0 ? "#d95f59" : "linear-gradient(90deg, var(--brand), var(--accent))"}`;
+        return `
+          <div class="return-row">
+            <strong title="${escapeAttr(row.fund.name)}">${escapeHTML(shortName(row.fund.name))}</strong>
+            <div class="return-track" aria-label="${escapeAttr(period.title)} for ${escapeAttr(row.fund.name)}">
+              <div class="return-fill" style="${escapeAttr(style)}"></div>
+            </div>
+            <span class="mix-percent">${escapeHTML(formatPercent(row.value))}</span>
+          </div>
+        `;
+      }).join("");
     }
 
     function renderStudyMix(funds, amount) {
@@ -2014,13 +2150,22 @@
         y5: trailingReturn(history, 5, true),
         y10: trailingReturn(history, 10, true)
       };
+      const periodReturns = {
+        m1: trailingMonthsReturn(history, 1),
+        m3: trailingMonthsReturn(history, 3),
+        m6: trailingMonthsReturn(history, 6),
+        y1: trailingReturn(history, 1, true),
+        y2: trailingReturn(history, 2, true),
+        y3: returns.y3,
+        y5: returns.y5
+      };
       const monthly = monthlyReturns(history);
       const volatility = annualizedVolatility(monthly);
       const consistency = monthly.length ? monthly.filter(v => v > 0).length / monthly.length : null;
       const maxDrawdown = maximumDrawdown(history);
       const historyYears = (latest.date - history[0].date) / (365.25 * 24 * 60 * 60 * 1000);
       const score = fundScore({ returns, volatility, consistency, maxDrawdown, historyYears });
-      return { code: searchItem.schemeCode, name, category, type, history, latest, returns, volatility, consistency, maxDrawdown, historyYears, score };
+      return { code: searchItem.schemeCode, name, category, type, history, latest, returns, periodReturns, volatility, consistency, maxDrawdown, historyYears, score };
     }
 
     function trailingReturn(history, years, annualized) {
@@ -2033,6 +2178,18 @@
       if (actualYears < years * .82) return null;
       const ratio = latest.nav / past.nav;
       return annualized ? Math.pow(ratio, 1 / actualYears) - 1 : ratio - 1;
+    }
+
+    function trailingMonthsReturn(history, months) {
+      const latest = history[history.length - 1];
+      if (!latest) return null;
+      const target = new Date(latest.date);
+      target.setMonth(target.getMonth() - months);
+      const past = closestNav(history, target);
+      if (!past) return null;
+      const actualMonths = (latest.date - past.date) / (30.4375 * 24 * 60 * 60 * 1000);
+      if (actualMonths < months * .65) return null;
+      return latest.nav / past.nav - 1;
     }
 
     function monthlyReturns(history) {
