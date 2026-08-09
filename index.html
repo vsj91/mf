@@ -1431,7 +1431,7 @@
                 <div class="mix-item">
                   <span class="mix-swatch" style="background:${colors[index % colors.length]}"></span>
                   <strong title="${escapeAttr(item.fund.name)}">${escapeHTML(shortName(item.fund.name))}</strong>
-                  <span class="mix-percent">${item.percent}%</span>
+                  <span class="mix-percent">${item.percent}% • ${escapeHTML(INR.format(Math.round(amount * item.percent / 100)))}/mo</span>
                 </div>
               `).join("")}
             </div>
