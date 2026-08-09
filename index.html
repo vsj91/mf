@@ -1960,6 +1960,10 @@
         <div class="notice">Based on your selected goal, time horizon, risk level, and return preference, here are funds whose category and historical NAV behavior match your filters. This is not investment advice and does not predict future returns.</div>
         ${renderStudyMix(funds, amount)}
         ${renderPeriodComparison(funds)}
+        <section class="period-panel" id="mostInvestedFunds" aria-label="Most invested funds to study">
+          <h3 class="mix-title">Most invested funds to study</h3>
+          <div class="meta-line">Loading broad-category funds from MFapi...</div>
+        </section>
         <div class="results-grid">
           ${funds.map((fund, index) => renderFundCard(fund, profile, index === 0)).join("")}
         </div>
@@ -1975,7 +1979,79 @@
       els.recommendationResults.querySelectorAll("[data-period]").forEach(button => {
         button.addEventListener("click", () => updateReturnChart(button.dataset.period));
       });
+      loadMostInvestedStudyFunds(funds.map(fund => fund.code));
       els.recommendationResults.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    async function loadMostInvestedStudyFunds(excludeCodes) {
+      const box = document.getElementById("mostInvestedFunds");
+      if (!box) return;
+      try {
+        const queries = [
+          "nifty 50 index direct growth",
+          "sensex index direct growth",
+          "large cap direct growth",
+          "flexi cap direct growth",
+          "balanced advantage direct growth"
+        ];
+        const raw = (await Promise.all(queries.map(query => searchFunds(query).catch(() => []))))
+          .flat()
+          .filter(item => !excludeCodes.includes(String(item.schemeCode)));
+        const map = new Map();
+        raw.forEach(item => {
+          const family = item.schemeName.toLowerCase()
+            .replace(/\b(direct|regular|growth|plan|option)\b/g, "")
+            .replace(/[^a-z0-9]+/g, " ")
+            .trim();
+          if (!map.has(family) || /direct/i.test(item.schemeName)) map.set(family, item);
+        });
+        const analysed = (await Promise.all(Array.from(map.values()).slice(0, 12).map(async candidate => {
+          try {
+            const analysis = await getAnalysedFund(candidate);
+            if (!analysis) return null;
+            const nameScore = (/direct/i.test(analysis.name) ? 10 : 0) + (/growth/i.test(analysis.name) ? 6 : 0);
+            analysis.popularStudyRank = analysis.score + nameScore + scale(analysis.historyYears, 3, 12) * 12;
+            return analysis;
+          } catch (_) {
+            return null;
+          }
+        }))).filter(Boolean)
+          .sort((a, b) => b.popularStudyRank - a.popularStudyRank)
+          .slice(0, 4);
+        box.innerHTML = renderMostInvestedStudyFunds(analysed);
+      } catch (error) {
+        box.innerHTML = `
+          <h3 class="mix-title">Most invested funds to study</h3>
+          <div class="error">${escapeHTML(error.message || "Could not load this section right now.")}</div>
+        `;
+      }
+    }
+
+    function renderMostInvestedStudyFunds(funds) {
+      if (!funds.length) {
+        return `
+          <h3 class="mix-title">Most invested funds to study</h3>
+          <div class="meta-line">MFapi did not return enough data for this section.</div>
+        `;
+      }
+      return `
+        <h3 class="mix-title">Most invested funds to study</h3>
+        <div class="meta-line">MFapi does not publish AUM or investor-count ranking. This list uses broad, commonly used categories and ranks funds by real NAV history, Direct/Growth fit, and analytical score.</div>
+        <div class="results-grid" style="margin-top:14px">
+          ${funds.map(fund => `
+            <article class="fund-card">
+              <h3 class="fund-name">${escapeHTML(cleanName(fund.name))}</h3>
+              <div class="meta-line">${escapeHTML(metaLabel(fund))}</div>
+              <div class="metrics primary">
+                <div class="metric"><small>1Y</small><strong>${escapeHTML(formatPercent(fund.periodReturns?.y1))}</strong></div>
+                <div class="metric"><small>3Y CAGR</small><strong>${escapeHTML(formatPercent(fund.periodReturns?.y3))}</strong></div>
+                <div class="metric"><small>Score</small><strong>${fund.score}/100</strong></div>
+              </div>
+            </article>
+          `).join("")}
+        </div>
+        <div class="notice">This is not an AUM ranking and not investment advice. Use it only as a study starting point.</div>
+      `;
     }
 
     function renderPeriodComparison(funds) {
