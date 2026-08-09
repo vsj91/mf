@@ -87,7 +87,7 @@ function cacheEls() {
     "freedomCurrent", "freedomSip", "freedomReturn", "runFreedomBtn", "freedomError", "freedomResults",
     "corpusCurrent", "corpusSip", "corpusLumpsum", "corpusYears", "corpusReturn", "corpusStepUp",
     "runCorpusBtn", "corpusError", "corpusResults", "metalType", "metalView", "runMetalsBtn",
-    "metalStatus", "metalError", "metalResults"
+    "metalStatus", "metalError", "metalResults", "runPopularBtn", "popularStatus", "popularError", "popularResults"
   ].forEach(id => { els[id] = document.getElementById(id); });
 }
 
@@ -250,6 +250,7 @@ function showTab(id, hashId = id) {
   if (!section?.classList.contains("section")) return;
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === id));
   document.querySelectorAll(".section").forEach(s => s.classList.toggle("active", s.id === id));
+  if (id === "popular") scheduleIdle(() => loadMostInvestedStudyFunds(), 300);
   if (hashId) history.replaceState(null, "", "#" + hashId);
 }
 
@@ -297,6 +298,7 @@ function wireInputs() {
   els.runFreedomBtn.addEventListener("click", runFreedomGoals);
   els.runCorpusBtn.addEventListener("click", runCorpusCalculator);
   els.runMetalsBtn.addEventListener("click", runMetalTracker);
+  els.runPopularBtn.addEventListener("click", () => loadMostInvestedStudyFunds());
 }
 
 function updateAmountUI() {
@@ -642,10 +644,6 @@ function renderRecommendations(funds, profile, amount) {
     <div class="notice">Based on your selected goal, time horizon, risk level, and return preference, here are funds whose category and historical NAV behavior match your filters. This is not investment advice and does not predict future returns.</div>
     ${renderStudyMix(displayFunds, amount)}
     ${renderPeriodComparison(displayFunds)}
-    <section class="period-panel" id="mostInvestedFunds" aria-label="Most invested funds to study">
-      <h3 class="mix-title">Most invested funds to study</h3>
-      <div class="meta-line">Separate learning list from broad MFapi category searches. Loading...</div>
-    </section>
     <div class="results-grid">
       ${displayFunds.map((fund, index) => renderFundCard(fund, profile, index === 0)).join("")}
     </div>
@@ -664,7 +662,6 @@ function renderRecommendations(funds, profile, amount) {
   els.recommendationResults.querySelectorAll("[data-fund-chart-period]").forEach(button => {
     button.addEventListener("click", () => updateFundChart(button));
   });
-  loadMostInvestedStudyFunds(displayFunds.map(fund => fund.code));
   els.recommendationResults.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -673,8 +670,12 @@ function selectedStudyFunds(funds, amount) {
 }
 
 async function loadMostInvestedStudyFunds(excludeCodes) {
-  const box = document.getElementById("mostInvestedFunds");
+  const box = els.popularResults || document.getElementById("popularResults");
   if (!box) return;
+  const excluded = Array.isArray(excludeCodes) ? excludeCodes.map(String) : [];
+  showError(els.popularError, "");
+  setStatus(els.popularStatus, true);
+  box.innerHTML = `<div class="empty">Loading broad-category funds from MFapi...</div>`;
   try {
     const queries = [
       "nifty 50 index direct growth",
@@ -685,7 +686,7 @@ async function loadMostInvestedStudyFunds(excludeCodes) {
     ];
     const raw = (await Promise.all(queries.map(query => searchFunds(query).catch(() => []))))
       .flat()
-      .filter(item => !excludeCodes.includes(String(item.schemeCode)));
+      .filter(item => !excluded.includes(String(item.schemeCode)));
     const map = new Map();
     raw.forEach(item => {
       const family = item.schemeName.toLowerCase()
@@ -710,23 +711,22 @@ async function loadMostInvestedStudyFunds(excludeCodes) {
       .slice(0, 4);
     box.innerHTML = renderMostInvestedStudyFunds(analysed);
   } catch (error) {
-    box.innerHTML = `
-      <h3 class="mix-title">Most invested funds to study</h3>
-      <div class="error">${escapeHTML(error.message || "Could not load this section right now.")}</div>
-    `;
+    showError(els.popularError, error.message || "Could not load this section right now.");
+  } finally {
+    setStatus(els.popularStatus, false);
   }
 }
 
 function renderMostInvestedStudyFunds(funds) {
   if (!funds.length) {
     return `
-      <h3 class="mix-title">Most invested funds to study</h3>
+      <h3 class="mix-title">Popular funds to study</h3>
       <div class="meta-line">MFapi did not return enough data for this section.</div>
     `;
   }
   return `
-    <h3 class="mix-title">Most invested funds to study</h3>
-    <div class="meta-line">MFapi does not publish AUM or investor-count ranking. This list uses broad, commonly used categories and ranks funds by real NAV history, Direct/Growth fit, and analytical score.</div>
+    <h3 class="mix-title">Popular funds to study</h3>
+    <div class="meta-line">MFapi does not publish AUM or investor-count ranking. This separate tab uses broad, commonly used categories and ranks funds by real NAV history, Direct/Growth fit, and analytical score.</div>
     <div class="results-grid" style="margin-top:14px">
       ${funds.map(fund => `
         <article class="fund-card">
