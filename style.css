@@ -1033,12 +1033,14 @@ table {
   width: 100%;
   border-collapse: collapse;
   min-width: 820px;
+  background: transparent;
 }
 th, td {
   padding: 13px 12px;
   border-bottom: 1px solid var(--line);
   text-align: left;
   vertical-align: top;
+  color: var(--ink);
 }
 th {
   background: #f4faf7;
@@ -1250,6 +1252,23 @@ tr:last-child td { border-bottom: 0; }
     background: rgba(28, 28, 30, .86);
     border-color: rgba(255, 255, 255, .12);
   }
+  .mobile-fund-row {
+    background: rgba(28, 28, 30, .86);
+    border-color: rgba(255, 255, 255, .12);
+  }
+  .table-wrap {
+    background: rgba(28, 28, 30, .86);
+  }
+  td {
+    background: rgba(28, 28, 30, .42);
+    color: var(--ink);
+  }
+  tr:nth-child(even) td {
+    background: rgba(255, 255, 255, .035);
+  }
+  .meta-line {
+    color: var(--muted);
+  }
   .input, select, button {
     color: var(--ink);
   }
@@ -1337,6 +1356,12 @@ tr:last-child td { border-bottom: 0; }
   .actions .btn { width: 100%; }
   .learn-card.wide { grid-column: auto; }
   .desktop-action { display: none; }
+  .metal-table {
+    display: none;
+  }
+  .mobile-fund-list {
+    display: block;
+  }
   .mobile-sticky { display: block; }
   .hero-panel { padding: 14px; }
   .notice { font-size: 12px; }
