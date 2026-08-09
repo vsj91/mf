@@ -478,6 +478,82 @@
       color: var(--ink);
       font-weight: 900;
     }
+    .freedom-card {
+      display: grid;
+      gap: 16px;
+    }
+    .freedom-hero {
+      border-radius: 24px;
+      padding: 20px;
+      color: #062017;
+      background: linear-gradient(135deg, #9af3cf, #f7d77b);
+      box-shadow: 0 18px 42px rgba(0, 122, 90, .14);
+    }
+    .freedom-hero small {
+      display: block;
+      font-weight: 850;
+      opacity: .72;
+      margin-bottom: 8px;
+    }
+    .freedom-hero strong {
+      display: block;
+      font-size: clamp(30px, 5vw, 48px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+    .freedom-hero span {
+      display: block;
+      margin-top: 9px;
+      line-height: 1.4;
+      font-weight: 650;
+    }
+    .insight-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .insight {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fbfbfd;
+      padding: 13px;
+      min-height: 82px;
+    }
+    .insight small {
+      display: block;
+      color: var(--muted);
+      font-weight: 800;
+      margin-bottom: 5px;
+    }
+    .insight strong {
+      display: block;
+      font-size: 19px;
+      line-height: 1.2;
+    }
+    .timeline {
+      display: grid;
+      gap: 10px;
+    }
+    .timeline-track {
+      height: 12px;
+      border-radius: 999px;
+      background: #edf3f1;
+      overflow: hidden;
+    }
+    .timeline-fill {
+      width: 0;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--brand), var(--accent));
+    }
+    .timeline-labels {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 750;
+    }
     .fund-name {
       margin: 0;
       font-size: 18px;
@@ -766,7 +842,7 @@
         background: linear-gradient(135deg, #6ee7b7, var(--brand-2));
         box-shadow: 0 16px 38px rgba(18, 184, 134, .22);
       }
-      .eyebrow, .mini-row, .choice, .fund-card, .metric, .learn-card,
+      .eyebrow, .mini-row, .choice, .fund-card, .metric, .learn-card, .insight,
       .search-item, .chip, .chart-wrap, .table-wrap, .input, .segment {
         background: rgba(28, 28, 30, .86);
         border-color: rgba(255, 255, 255, .12);
@@ -812,6 +888,9 @@
         background: #1c1c1e;
       }
       .bar-track {
+        background: rgba(255, 255, 255, .10);
+      }
+      .timeline-track {
         background: rgba(255, 255, 255, .10);
       }
       th {
@@ -884,6 +963,8 @@
       .mix-donut { width: 132px; height: 132px; }
       .mix-donut::after { width: 78px; height: 78px; font-size: 12px; }
       .mix-title { font-size: 18px; }
+      .insight-grid { grid-template-columns: 1fr; }
+      .freedom-hero { padding: 16px; border-radius: 22px; }
     }
   </style>
 </head>
@@ -897,6 +978,7 @@
       <nav class="tabs" aria-label="Primary navigation">
         <button class="tab active" data-tab="find">Find Funds</button>
         <button class="tab" data-tab="sip">SIP Challenge</button>
+        <button class="tab" data-tab="loan">Loan Freedom</button>
         <button class="tab" data-tab="compare">Compare</button>
         <button class="tab" data-tab="learn">Learn</button>
       </nav>
@@ -1060,6 +1142,70 @@
       <div id="compareResults" style="margin-top:18px"></div>
     </section>
 
+    <section id="loan" class="section" aria-labelledby="loan-title">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="loan-title">Loan Freedom</h2>
+          <p class="section-copy">Study how a separate SIP side fund may compare with your outstanding loan over time.</p>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="panel wizard">
+          <div>
+            <h3 class="step-title">Loan type</h3>
+            <select class="input" id="loanType">
+              <option>Home Loan</option>
+              <option>Car Loan</option>
+              <option>Personal Loan</option>
+              <option>Education Loan</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div>
+              <label for="loanOutstanding">Outstanding amount</label>
+              <input class="input" id="loanOutstanding" inputmode="numeric" value="2500000">
+            </div>
+            <div>
+              <label for="loanEmi">Current EMI</label>
+              <input class="input" id="loanEmi" inputmode="numeric" value="25000">
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label for="loanRate">Loan interest rate (%)</label>
+              <input class="input" id="loanRate" inputmode="decimal" value="8.5">
+            </div>
+            <div>
+              <label for="loanYears">Remaining years</label>
+              <input class="input" id="loanYears" inputmode="decimal" value="15">
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label for="loanSip">Extra monthly SIP</label>
+              <input class="input" id="loanSip" inputmode="numeric" value="10000">
+            </div>
+            <div>
+              <label for="sipReturn">Assumed SIP return (%)</label>
+              <select class="input" id="sipReturn">
+                <option value="8">Conservative 8%</option>
+                <option value="10" selected>Balanced 10%</option>
+                <option value="12">Aggressive 12%</option>
+              </select>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary" id="runLoanBtn">Calculate Plan</button>
+          </div>
+          <div id="loanError"></div>
+          <div class="notice">This is a planning calculator using assumed SIP returns. It is not investment advice, loan advice, tax advice, or a recommendation to prepay.</div>
+        </div>
+        <div id="loanResults" class="panel">
+          <div class="empty">Enter your loan and SIP details to see a simple Loan Freedom view.</div>
+        </div>
+      </div>
+    </section>
+
     <section id="learn" class="section" aria-labelledby="learn-title">
       <div class="section-head">
         <div>
@@ -1076,6 +1222,7 @@
         <article class="learn-card"><h3>Direct vs Regular</h3><p>Direct plans are bought without distributor commission and often have lower expense ratios. Regular plans include distributor commission.</p></article>
         <article class="learn-card"><h3>Growth vs IDCW</h3><p>Growth plans keep gains invested in the fund. IDCW plans may distribute income, so NAV return comparison can be less straightforward.</p></article>
         <article class="learn-card"><h3>Fund Score</h3><p>The score combines historical return, consistency, volatility, drawdown, and available history. It is an analytical shortlist score, not advice.</p></article>
+        <article class="learn-card"><h3>Loan Freedom</h3><p>This planner compares an EMI-only path with a separate SIP side corpus using assumed returns. It does not decide whether you should prepay.</p></article>
         <article class="learn-card"><h3>Risk reminder</h3><p>Market funds can lose value. Category fit and history help analysis, but they cannot remove uncertainty.</p></article>
       </div>
       <div class="notice">
@@ -1140,7 +1287,9 @@
         "findFundsBtn", "findFundsMobileBtn", "findStatus", "findError", "recommendationResults",
         "sipSearch", "sipSearchResults", "sipSearchStatus", "sipSelected", "sipAmount", "sipYears",
         "runSipBtn", "sipStatus", "sipError", "sipResults", "compareSearch", "compareSearchResults",
-        "compareSearchStatus", "compareSelected", "runCompareBtn", "compareStatus", "compareError", "compareResults"
+        "compareSearchStatus", "compareSelected", "runCompareBtn", "compareStatus", "compareError", "compareResults",
+        "loanType", "loanOutstanding", "loanEmi", "loanRate", "loanYears", "loanSip", "sipReturn",
+        "runLoanBtn", "loanError", "loanResults"
       ].forEach(id => { els[id] = document.getElementById(id); });
     }
 
@@ -1211,6 +1360,7 @@
       els.findFundsMobileBtn.addEventListener("click", findFunds);
       els.runSipBtn.addEventListener("click", runSipChallenge);
       els.runCompareBtn.addEventListener("click", runCompare);
+      els.runLoanBtn.addEventListener("click", runLoanPlanner);
     }
 
     function updateAmountUI() {
@@ -1908,6 +2058,117 @@
           <div class="notice">Comparison metrics are historical calculations from NAV data. They are not recommendations to buy, sell, or hold.</div>
         </div>
       `;
+    }
+
+    /* ---------- Loan freedom planner ---------- */
+    function runLoanPlanner() {
+      showError(els.loanError, "");
+      try {
+        const input = {
+          type: els.loanType.value,
+          outstanding: readMoney(els.loanOutstanding.value),
+          emi: readMoney(els.loanEmi.value),
+          loanRate: Number(String(els.loanRate.value).replace(/[^\d.]/g, "")),
+          years: Number(String(els.loanYears.value).replace(/[^\d.]/g, "")),
+          sip: readMoney(els.loanSip.value),
+          sipReturn: Number(els.sipReturn.value)
+        };
+        validateLoanInput(input);
+        const plan = calculateLoanFreedom(input);
+        renderLoanResults(input, plan);
+      } catch (error) {
+        showError(els.loanError, error.message || "Could not calculate this plan.");
+      }
+    }
+
+    function validateLoanInput(input) {
+      if (!input.outstanding || input.outstanding < 1000) throw new Error("Enter a valid outstanding loan amount.");
+      if (!input.emi || input.emi < 100) throw new Error("Enter a valid EMI.");
+      if (!input.loanRate || input.loanRate <= 0) throw new Error("Enter a valid loan interest rate.");
+      if (!input.years || input.years <= 0) throw new Error("Enter valid remaining years.");
+      if (!input.sip || input.sip < 100) throw new Error("Enter a valid extra monthly SIP amount.");
+      const monthlyInterest = input.outstanding * (input.loanRate / 100 / 12);
+      if (input.emi <= monthlyInterest) throw new Error("This EMI is too low to reduce the loan at the entered rate.");
+    }
+
+    function calculateLoanFreedom(input) {
+      const loanMonthlyRate = input.loanRate / 100 / 12;
+      const sipMonthlyRate = input.sipReturn / 100 / 12;
+      const maxMonths = Math.ceil(input.years * 12);
+      let balance = input.outstanding;
+      let corpus = 0;
+      let interestPaid = 0;
+      let closure = null;
+      const points = [];
+
+      for (let month = 1; month <= maxMonths && balance > 1; month++) {
+        const interest = balance * loanMonthlyRate;
+        const principal = Math.min(input.emi - interest, balance);
+        balance = Math.max(0, balance - principal);
+        interestPaid += interest;
+        corpus = corpus * (1 + sipMonthlyRate) + input.sip;
+        points.push({ month, balance, corpus, interestPaid });
+        if (!closure && corpus >= balance && balance > 0) {
+          closure = { month, balance, corpus, interestPaid };
+        }
+      }
+
+      const payoff = points[points.length - 1] || { month: 0, balance: input.outstanding, corpus: 0, interestPaid: 0 };
+      const naturalMonths = payoff.month;
+      const naturalInterest = payoff.interestPaid;
+      const closureMonth = closure ? closure.month : null;
+      const savedInterest = closure ? Math.max(0, naturalInterest - closure.interestPaid) : 0;
+      const progress = closure ? clamp(Math.round(closure.month / Math.max(naturalMonths, 1) * 100), 0, 100) : 100;
+      return { points, naturalMonths, naturalInterest, closure, closureMonth, savedInterest, progress };
+    }
+
+    function renderLoanResults(input, plan) {
+      const canStudyClosure = Boolean(plan.closure);
+      const heroTitle = canStudyClosure ? monthsLabel(plan.closureMonth) : "Not within entered tenure";
+      const heroText = canStudyClosure
+        ? `At the assumed ${input.sipReturn}% SIP return, the side corpus may become comparable to the remaining ${input.type.toLowerCase()} balance around this time.`
+        : `At the assumed ${input.sipReturn}% SIP return, the side corpus does not catch the remaining balance within ${input.years} years.`;
+      const closureBalance = plan.closure ? plan.closure.balance : plan.points.at(-1)?.balance || 0;
+      const closureCorpus = plan.closure ? plan.closure.corpus : plan.points.at(-1)?.corpus || 0;
+      els.loanResults.innerHTML = `
+        <div class="freedom-card">
+          <div class="freedom-hero">
+            <small>Possible study point</small>
+            <strong>${escapeHTML(heroTitle)}</strong>
+            <span>${escapeHTML(heroText)}</span>
+          </div>
+          <div class="insight-grid">
+            <div class="insight"><small>Current payoff path</small><strong>${escapeHTML(monthsLabel(plan.naturalMonths))}</strong></div>
+            <div class="insight"><small>Future interest on EMI path</small><strong>${escapeHTML(INR.format(plan.naturalInterest))}</strong></div>
+            <div class="insight"><small>Side corpus at study point</small><strong>${escapeHTML(INR.format(closureCorpus))}</strong></div>
+            <div class="insight"><small>Loan balance at study point</small><strong>${escapeHTML(INR.format(closureBalance))}</strong></div>
+          </div>
+          <div class="timeline">
+            <div class="timeline-track"><div class="timeline-fill" style="width:${canStudyClosure ? plan.progress : 100}%"></div></div>
+            <div class="timeline-labels">
+              <span>Today</span>
+              <span>${escapeHTML(canStudyClosure ? "Corpus meets balance" : "Loan tenure end")}</span>
+            </div>
+          </div>
+          <div class="notice">${escapeHTML(loanPlannerNote(input, plan))}</div>
+        </div>
+      `;
+    }
+
+    function loanPlannerNote(input, plan) {
+      if (!plan.closure) {
+        return "This does not mean the SIP is bad or the loan must continue. It only means the assumed side corpus does not cross the projected loan balance within the entered tenure.";
+      }
+      return `Planning view only: if you studied closure around ${monthsLabel(plan.closureMonth)}, the model estimates about ${INR.format(plan.savedInterest)} of future loan interest could be avoided versus the EMI-only path. Taxes, exit loads, fund returns, and lender charges are not included.`;
+    }
+
+    function monthsLabel(months) {
+      if (!months || months < 1) return "0 months";
+      const years = Math.floor(months / 12);
+      const rem = months % 12;
+      if (!years) return `${months} month${months === 1 ? "" : "s"}`;
+      if (!rem) return `${years} year${years === 1 ? "" : "s"}`;
+      return `${years}y ${rem}m`;
     }
 
     /* ---------- Charts and utilities ---------- */
