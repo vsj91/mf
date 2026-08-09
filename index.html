@@ -507,6 +507,51 @@
       line-height: 1.4;
       font-weight: 650;
     }
+    .savings-circle-wrap {
+      display: grid;
+      grid-template-columns: 148px minmax(0, 1fr);
+      gap: 16px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: #fbfbfd;
+      padding: 14px;
+    }
+    .savings-circle {
+      --save: 0;
+      width: 132px;
+      height: 132px;
+      border-radius: 50%;
+      background: conic-gradient(var(--brand) calc(var(--save) * 1%), #e7efec 0);
+      display: grid;
+      place-items: center;
+      margin: 0 auto;
+    }
+    .savings-circle span {
+      width: 82px;
+      height: 82px;
+      border-radius: 50%;
+      background: #fff;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--ink);
+      font-weight: 950;
+      line-height: 1.05;
+      padding: 8px;
+    }
+    .savings-copy strong {
+      display: block;
+      font-size: 22px;
+      line-height: 1.15;
+      margin-bottom: 5px;
+    }
+    .savings-copy p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 14px;
+    }
     .insight-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -842,7 +887,7 @@
         background: linear-gradient(135deg, #6ee7b7, var(--brand-2));
         box-shadow: 0 16px 38px rgba(18, 184, 134, .22);
       }
-      .eyebrow, .mini-row, .choice, .fund-card, .metric, .learn-card, .insight,
+      .eyebrow, .mini-row, .choice, .fund-card, .metric, .learn-card, .insight, .savings-circle-wrap,
       .search-item, .chip, .chart-wrap, .table-wrap, .input, .segment {
         background: rgba(28, 28, 30, .86);
         border-color: rgba(255, 255, 255, .12);
@@ -884,8 +929,11 @@
       .score-ring {
         background: conic-gradient(var(--brand) calc(var(--p) * 1%), rgba(255, 255, 255, .12) 0);
       }
-      .score-ring span, .mix-donut::after {
+      .score-ring span, .mix-donut::after, .savings-circle span {
         background: #1c1c1e;
+      }
+      .savings-circle {
+        background: conic-gradient(var(--brand) calc(var(--save) * 1%), rgba(255, 255, 255, .12) 0);
       }
       .bar-track {
         background: rgba(255, 255, 255, .10);
@@ -964,6 +1012,7 @@
       .mix-donut::after { width: 78px; height: 78px; font-size: 12px; }
       .mix-title { font-size: 18px; }
       .insight-grid { grid-template-columns: 1fr; }
+      .savings-circle-wrap { grid-template-columns: 1fr; text-align: center; }
       .freedom-hero { padding: 16px; border-radius: 22px; }
     }
   </style>
@@ -977,8 +1026,8 @@
       </div>
       <nav class="tabs" aria-label="Primary navigation">
         <button class="tab active" data-tab="find">Find Funds</button>
-        <button class="tab" data-tab="sip">SIP Challenge</button>
         <button class="tab" data-tab="loan">Loan Freedom</button>
+        <button class="tab" data-tab="sip">SIP Challenge</button>
         <button class="tab" data-tab="compare">Compare</button>
         <button class="tab" data-tab="learn">Learn</button>
       </nav>
@@ -2130,12 +2179,20 @@
         : `At the assumed ${input.sipReturn}% SIP return, the side corpus does not catch the remaining balance within ${input.years} years.`;
       const closureBalance = plan.closure ? plan.closure.balance : plan.points.at(-1)?.balance || 0;
       const closureCorpus = plan.closure ? plan.closure.corpus : plan.points.at(-1)?.corpus || 0;
+      const savePercent = plan.naturalInterest ? Math.round(clamp(plan.savedInterest / plan.naturalInterest * 100, 0, 100)) : 0;
       els.loanResults.innerHTML = `
         <div class="freedom-card">
           <div class="freedom-hero">
             <small>Possible study point</small>
             <strong>${escapeHTML(heroTitle)}</strong>
             <span>${escapeHTML(heroText)}</span>
+          </div>
+          <div class="savings-circle-wrap">
+            <div class="savings-circle" style="--save:${savePercent}"><span>${savePercent}%<br>saved</span></div>
+            <div class="savings-copy">
+              <strong>${escapeHTML(INR.format(plan.savedInterest))} potential interest avoided</strong>
+              <p>Compared with the regular EMI-only path, this is the estimated future loan interest that may be avoided if the side corpus is studied for closure at the shown point.</p>
+            </div>
           </div>
           <div class="insight-grid">
             <div class="insight"><small>Current payoff path</small><strong>${escapeHTML(monthsLabel(plan.naturalMonths))}</strong></div>
