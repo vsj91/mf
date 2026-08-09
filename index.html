@@ -2649,7 +2649,81 @@
             </div>
           </div>
           <div class="notice">${escapeHTML(loanPlannerNote(input, plan))}</div>
+          <section class="period-panel" id="loanFundSuggestions" aria-label="Funds to study for loan freedom">
+            <h3 class="mix-title">Funds to study for this loan plan</h3>
+            <div class="meta-line">Loading MFapi historical matches based on your SIP amount and loan timeline...</div>
+          </section>
         </div>
+      `;
+      loadLoanFundSuggestions(input, plan);
+    }
+
+    async function loadLoanFundSuggestions(input, plan) {
+      const box = document.getElementById("loanFundSuggestions");
+      if (!box) return;
+      try {
+        const profile = loanFreedomProfile(input, plan);
+        const candidates = await getRecommendationCandidates(profile);
+        const analysed = (await Promise.all(candidates.slice(0, 8).map(async candidate => {
+          try {
+            const analysis = await getAnalysedFund(candidate);
+            if (!analysis) return null;
+            analysis.profileFit = profileFitScore(analysis, profile);
+            analysis.finalRank = analysis.score + analysis.profileFit + returnPreferenceScore(analysis, profile.returnPref);
+            return analysis;
+          } catch (_) {
+            return null;
+          }
+        }))).filter(Boolean);
+        const count = suggestedFundCount(input.sip, analysed.length);
+        const funds = analysed
+          .filter(fund => fund.latest && isRecentNav(fund.latest.date))
+          .sort((a, b) => b.finalRank - a.finalRank)
+          .slice(0, count);
+        if (!funds.length) throw new Error("MFapi did not return enough recent NAV history for this loan profile.");
+        box.innerHTML = renderLoanFundSuggestions(funds, profile, input, plan);
+      } catch (error) {
+        box.innerHTML = `
+          <h3 class="mix-title">Funds to study for this loan plan</h3>
+          <div class="error">${escapeHTML(error.message || "Could not load fund suggestions right now.")}</div>
+        `;
+      }
+    }
+
+    function loanFreedomProfile(input, plan) {
+      const studyMonths = plan.closureMonth || plan.naturalMonths || Math.round(input.years * 12);
+      const years = studyMonths / 12;
+      const duration = years <= 3 ? durations[0] : years <= 5 ? durations[1] : years <= 10 ? durations[2] : durations[3];
+      const risk = years <= 3 ? "Low" : years <= 5 ? "Moderate" : input.sipReturn >= 12 ? "High" : "Moderate";
+      const returnPref = input.sipReturn >= 12 ? "high" : input.sipReturn <= 8 ? "stable" : "moderate";
+      return { goal: "house", duration, risk, returnPref };
+    }
+
+    function renderLoanFundSuggestions(funds, profile, input, plan) {
+      const studyTime = plan.closureMonth ? monthsLabel(plan.closureMonth) : monthsLabel(plan.naturalMonths);
+      return `
+        <h3 class="mix-title">Funds to study for this loan plan</h3>
+        <div class="meta-line">Based on ${escapeHTML(INR.format(input.sip))}/month SIP, about ${escapeHTML(studyTime)} study timeline, ${escapeHTML(profile.duration.label)}, and ${escapeHTML(profile.risk)} risk. This is educational analysis, not investment advice.</div>
+        <div class="results-grid" style="margin-top:14px">
+          ${funds.map((fund, index) => `
+            <article class="fund-card ${index === 0 ? "best" : ""}">
+              <div class="fund-top">
+                <div>
+                  <h3 class="fund-name">${escapeHTML(cleanName(fund.name))}</h3>
+                  <div class="meta-line">${escapeHTML(metaLabel(fund))}</div>
+                </div>
+                <div class="score-ring" style="--p:${fund.score}"><span>${fund.score}</span></div>
+              </div>
+              <div class="metrics primary">
+                <div class="metric"><small>1Y</small><strong>${escapeHTML(formatPercent(fund.periodReturns?.y1))}</strong></div>
+                <div class="metric"><small>3Y CAGR</small><strong>${escapeHTML(formatPercent(fund.periodReturns?.y3))}</strong></div>
+                <div class="metric"><small>5Y CAGR</small><strong>${escapeHTML(formatPercent(fund.periodReturns?.y5))}</strong></div>
+              </div>
+              <div class="why">${escapeHTML(whyMatches(fund, profile))}</div>
+            </article>
+          `).join("")}
+        </div>
+        <div class="notice">These funds are study candidates from MFapi NAV history. Do not treat this as advice to invest or prepay a loan.</div>
       `;
     }
 
