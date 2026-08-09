@@ -2098,10 +2098,20 @@
       if (profile.risk === "Low" || profile.duration.id === "1-3" || profile.goal === "emergency") base = low;
       if (profile.risk === "High") base = high;
       if (profile.risk === "Very High") base = veryHigh;
-      if (profile.returnPref === "stable") base = base.concat(["balanced advantage direct growth", "large cap direct growth", "short duration direct growth"]);
-      if (profile.returnPref === "high") base = base.concat(["mid cap direct growth", "small cap direct growth", "flexi cap direct growth"]);
       if (profile.duration.id === "3-5" && profile.risk !== "Low") base = ["balanced advantage direct growth", "hybrid direct growth", "large cap direct growth", "index direct growth"];
       if (profile.duration.id === "10+" && profile.risk !== "Low") base = base.concat(["elss direct growth", "nifty 50 index direct growth"]);
+      if (profile.returnPref === "stable") {
+        base = ["balanced advantage direct growth", "large cap direct growth", "short duration direct growth", "corporate bond direct growth"].concat(base);
+      }
+      if (profile.returnPref === "moderate") {
+        base = base.concat(["flexi cap direct growth", "nifty 50 index direct growth"]);
+      }
+      if (profile.returnPref === "high" && profile.risk !== "Low" && profile.duration.id !== "1-3" && profile.goal !== "emergency") {
+        base = ["mid cap direct growth", "large and mid cap direct growth", "flexi cap direct growth", "small cap direct growth", "focused fund direct growth", "value fund direct growth"].concat(base);
+      }
+      if (profile.returnPref === "high" && (profile.risk === "Low" || profile.duration.id === "1-3" || profile.goal === "emergency")) {
+        base = ["balanced advantage direct growth", "large cap direct growth", "index direct growth"].concat(base);
+      }
       return [...new Set(base)];
     }
 
@@ -2141,14 +2151,21 @@
     }
 
     function returnPreferenceScore(fund, preference) {
+      const category = `${fund.category} ${fund.type} ${fund.name}`.toLowerCase();
       const longReturn = firstNumber(fund.returns.y10, fund.returns.y5, fund.returns.y3, fund.returns.y1);
       if (preference === "stable") {
-        return (1 - scale(fund.volatility, 0.04, 0.24)) * 18 + (1 - scale(Math.abs(fund.maxDrawdown || 0), 0.03, 0.45)) * 12;
+        const categoryBonus = /liquid|short|debt|corporate|balanced|large cap|index/.test(category) ? 12 : 0;
+        const categoryPenalty = /small cap|sector|thematic/.test(category) ? 14 : 0;
+        return (1 - scale(fund.volatility, 0.04, 0.24)) * 24 + (1 - scale(Math.abs(fund.maxDrawdown || 0), 0.03, 0.45)) * 16 + categoryBonus - categoryPenalty;
       }
       if (preference === "high") {
-        return scale(longReturn, 0.04, 0.22) * 24 + scale(fund.volatility, 0.06, 0.26) * 4;
+        const growthBonus = /small cap|mid cap|large & mid|large and mid|flexi|focused|value|equity/.test(category) ? 18 : 0;
+        const defensivePenalty = /liquid|overnight|short|corporate|debt|money market/.test(category) ? 22 : 0;
+        return scale(longReturn, 0.04, 0.24) * 34 + scale(fund.returns.y3, 0.04, 0.22) * 16 + growthBonus - defensivePenalty;
       }
-      return scale(longReturn, 0.02, 0.18) * 12 + (1 - scale(fund.volatility, 0.04, 0.24)) * 8;
+      const moderateBonus = /balanced|large cap|index|flexi|elss/.test(category) ? 10 : 0;
+      const highRiskPenalty = /small cap|sector|thematic/.test(category) ? 10 : 0;
+      return scale(longReturn, 0.02, 0.18) * 14 + (1 - scale(fund.volatility, 0.04, 0.24)) * 12 + moderateBonus - highRiskPenalty;
     }
 
     function renderRecommendations(funds, profile, amount) {
