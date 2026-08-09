@@ -1847,18 +1847,24 @@
       els.languageSelect.addEventListener("change", event => {
         state.language = event.target.value;
         localStorage.setItem("ffi_language", state.language);
-        applyLanguage(state.language);
+        if (state.language === "en") {
+          resetToEnglish(true);
+        } else {
+          applyLanguage(state.language);
+        }
       });
-      setTimeout(() => applyLanguage(state.language), 900);
+      if (state.language === "en") {
+        clearTranslateCookie();
+        document.documentElement.lang = "en";
+        sessionStorage.removeItem("ffi_force_english_reload");
+      } else {
+        setTimeout(() => applyLanguage(state.language), 900);
+      }
     }
 
     function applyLanguage(code) {
-      if (code === "en") {
-        resetToEnglish();
-        return;
-      }
-      sessionStorage.removeItem("ffi_resetting_english");
-      sessionStorage.removeItem("ffi_english_reset_done");
+      if (code === "en") return;
+      sessionStorage.removeItem("ffi_force_english_reload");
       const combo = document.querySelector(".goog-te-combo");
       if (!combo) return;
       combo.value = code;
@@ -1866,20 +1872,11 @@
       document.documentElement.lang = code;
     }
 
-    function resetToEnglish() {
-      const wasTranslated = hasTranslateCookie() || document.querySelector(".translated-ltr, .translated-rtl");
+    function resetToEnglish(forceReload) {
       clearTranslateCookie();
       document.documentElement.lang = "en";
-      if (sessionStorage.getItem("ffi_english_reset_done") === "1") return;
-      const alreadyResetting = sessionStorage.getItem("ffi_resetting_english") === "1";
-      if (alreadyResetting) {
-        sessionStorage.removeItem("ffi_resetting_english");
-        sessionStorage.setItem("ffi_english_reset_done", "1");
-        return;
-      }
-      if (wasTranslated) {
-        sessionStorage.setItem("ffi_resetting_english", "1");
-        sessionStorage.setItem("ffi_english_reset_done", "1");
+      if (forceReload && sessionStorage.getItem("ffi_force_english_reload") !== "1") {
+        sessionStorage.setItem("ffi_force_english_reload", "1");
         window.location.reload();
       }
     }
@@ -1891,6 +1888,8 @@
     function clearTranslateCookie() {
       [
         "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/",
+        "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=plansip.com",
+        "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=.plansip.com",
         "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=vsj91.github.io",
         "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=.vsj91.github.io",
         "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=github.io",
@@ -1906,7 +1905,7 @@
         includedLanguages: languages.map(([code]) => code).filter(code => code !== "en").join(","),
         autoDisplay: false
       }, "google_translate_element");
-      setTimeout(() => applyLanguage(state.language), 700);
+      if (state.language !== "en") setTimeout(() => applyLanguage(state.language), 700);
     };
 
     function renderChoices() {
