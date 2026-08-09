@@ -1175,6 +1175,8 @@
         <button class="tab active" data-tab="find">Find Funds</button>
         <button class="tab" data-tab="loan">Loan Freedom</button>
         <button class="tab" data-tab="freedom">Freedom Goals</button>
+        <button class="tab" data-tab="corpus">Corpus</button>
+        <button class="tab" data-tab="metals">Gold/Silver</button>
         <button class="tab" data-tab="sip">SIP Challenge</button>
         <button class="tab" data-tab="compare">Compare</button>
         <button class="tab" data-tab="learn">Learn</button>
@@ -1503,6 +1505,103 @@
       </div>
     </section>
 
+    <section id="corpus" class="section" aria-labelledby="corpus-title">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="corpus-title">Overall Corpus</h2>
+          <p class="section-copy">Estimate your future corpus from current investments, SIP, one-time additions, and assumed returns.</p>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="panel wizard">
+          <div class="form-row">
+            <div>
+              <label for="corpusCurrent">Current investments</label>
+              <input class="input" id="corpusCurrent" inputmode="numeric" value="500000">
+            </div>
+            <div>
+              <label for="corpusSip">Monthly SIP</label>
+              <input class="input" id="corpusSip" inputmode="numeric" value="25000">
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label for="corpusLumpsum">One-time addition</label>
+              <input class="input" id="corpusLumpsum" inputmode="numeric" value="0">
+            </div>
+            <div>
+              <label for="corpusYears">Years</label>
+              <input class="input" id="corpusYears" inputmode="decimal" value="15">
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label for="corpusReturn">Assumed return (%)</label>
+              <select class="input" id="corpusReturn">
+                <option value="8">Conservative 8%</option>
+                <option value="10" selected>Balanced 10%</option>
+                <option value="12">Growth 12%</option>
+              </select>
+            </div>
+            <div>
+              <label for="corpusStepUp">Yearly SIP step-up (%)</label>
+              <select class="input" id="corpusStepUp">
+                <option value="0" selected>No step-up</option>
+                <option value="5">5% yearly</option>
+                <option value="10">10% yearly</option>
+                <option value="15">15% yearly</option>
+              </select>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary" id="runCorpusBtn">Calculate Corpus</button>
+          </div>
+          <div id="corpusError"></div>
+          <div class="notice">This uses assumed returns. It is a planning estimate, not a guarantee or investment advice.</div>
+        </div>
+        <div id="corpusResults" class="panel">
+          <div class="empty">Enter your savings details to estimate future corpus.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="metals" class="section" aria-labelledby="metals-title">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="metals-title">Gold/Silver Tracker</h2>
+          <p class="section-copy">Study Gold and Silver mutual fund schemes using MFapi NAV history.</p>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="panel wizard">
+          <div>
+            <h3 class="step-title">Metal category</h3>
+            <select class="input" id="metalType">
+              <option value="gold" selected>Gold funds</option>
+              <option value="silver">Silver funds</option>
+              <option value="both">Gold + Silver</option>
+            </select>
+          </div>
+          <div>
+            <h3 class="step-title">View</h3>
+            <select class="input" id="metalView">
+              <option value="direct" selected>Prefer Direct Growth</option>
+              <option value="all">Include all Growth variants</option>
+            </select>
+          </div>
+          <div class="actions">
+            <div class="status" id="metalStatus"><span class="spinner"></span><span>Loading metal funds...</span></div>
+            <button class="btn btn-primary" id="runMetalsBtn">Track Metals</button>
+          </div>
+          <div id="metalError"></div>
+          <div class="notice">Gold/Silver fund returns come from NAV history. They are not commodity price forecasts.</div>
+        </div>
+        <div id="metalResults" class="panel">
+          <div class="empty">Choose Gold, Silver, or both to compare metal fund history.</div>
+        </div>
+      </div>
+    </section>
+
     <section id="learn" class="section" aria-labelledby="learn-title">
       <div class="section-head">
         <div>
@@ -1614,7 +1713,10 @@
         "loanType", "loanOutstanding", "loanEmi", "loanRate", "loanYears", "loanSip", "sipReturn",
         "runLoanBtn", "loanError", "loanResults", "freedomGoalType", "croreFields", "freedomFields",
         "croreCurrent", "croreSip", "croreReturn", "croreTarget", "monthlyExpense", "freedomMultiplier",
-        "freedomCurrent", "freedomSip", "freedomReturn", "runFreedomBtn", "freedomError", "freedomResults"
+        "freedomCurrent", "freedomSip", "freedomReturn", "runFreedomBtn", "freedomError", "freedomResults",
+        "corpusCurrent", "corpusSip", "corpusLumpsum", "corpusYears", "corpusReturn", "corpusStepUp",
+        "runCorpusBtn", "corpusError", "corpusResults", "metalType", "metalView", "runMetalsBtn",
+        "metalStatus", "metalError", "metalResults"
       ].forEach(id => { els[id] = document.getElementById(id); });
     }
 
@@ -1741,6 +1843,8 @@
       els.runLoanBtn.addEventListener("click", runLoanPlanner);
       els.freedomGoalType.addEventListener("change", updateFreedomFields);
       els.runFreedomBtn.addEventListener("click", runFreedomGoals);
+      els.runCorpusBtn.addEventListener("click", runCorpusCalculator);
+      els.runMetalsBtn.addEventListener("click", runMetalTracker);
     }
 
     function updateAmountUI() {
@@ -2994,6 +3098,158 @@
       `;
     }
 
+    /* ---------- Overall corpus calculator ---------- */
+    function runCorpusCalculator() {
+      showError(els.corpusError, "");
+      try {
+        const input = {
+          current: readMoney(els.corpusCurrent.value),
+          sip: readMoney(els.corpusSip.value),
+          lumpsum: readMoney(els.corpusLumpsum.value) || 0,
+          years: Number(String(els.corpusYears.value).replace(/[^\d.]/g, "")),
+          rate: Number(els.corpusReturn.value),
+          stepUp: Number(els.corpusStepUp.value)
+        };
+        validateCorpusInput(input);
+        renderCorpusResults(input, calculateCorpus(input));
+      } catch (error) {
+        showError(els.corpusError, error.message || "Could not calculate corpus.");
+      }
+    }
+
+    function validateCorpusInput(input) {
+      if (input.current < 0 || Number.isNaN(input.current)) throw new Error("Enter valid current investments.");
+      if (input.sip < 0 || Number.isNaN(input.sip)) throw new Error("Enter a valid monthly SIP.");
+      if (input.lumpsum < 0 || Number.isNaN(input.lumpsum)) throw new Error("Enter a valid one-time addition.");
+      if (!input.years || input.years <= 0) throw new Error("Enter valid years.");
+      if (!input.rate || input.rate <= 0) throw new Error("Choose a valid assumed return.");
+      if (input.current + input.sip + input.lumpsum <= 0) throw new Error("Add current investments, SIP, or one-time amount.");
+    }
+
+    function calculateCorpus(input) {
+      const months = Math.round(input.years * 12);
+      const monthlyRate = input.rate / 100 / 12;
+      let corpus = input.current + input.lumpsum;
+      let sip = input.sip;
+      let invested = input.current + input.lumpsum;
+      const yearly = [];
+      for (let month = 1; month <= months; month++) {
+        corpus *= 1 + monthlyRate;
+        corpus += sip;
+        invested += sip;
+        if (month % 12 === 0 && month < months) sip *= 1 + input.stepUp / 100;
+        if (month % 12 === 0 || month === months) {
+          yearly.push({ name: `Year ${Math.ceil(month / 12)}`, value: corpus, invested });
+        }
+      }
+      return { months, corpus, invested, gain: corpus - invested, yearly };
+    }
+
+    function renderCorpusResults(input, result) {
+      const gainPercent = result.invested ? Math.round(clamp(result.gain / result.invested * 100, 0, 999)) : 0;
+      els.corpusResults.innerHTML = `
+        <div class="goal-result">
+          <div class="goal-hero">
+            <small>Estimated future corpus</small>
+            <strong>${escapeHTML(INR.format(result.corpus))}</strong>
+            <span>At an assumed ${escapeHTML(input.rate)}% annual return over ${escapeHTML(monthsLabel(result.months))}${input.stepUp ? ` with ${escapeHTML(input.stepUp)}% yearly SIP step-up` : ""}.</span>
+          </div>
+          <div class="savings-circle-wrap">
+            <div class="goal-circle" style="--goal:${clamp(gainPercent, 0, 100)}"><span>${gainPercent}%<br>gain</span></div>
+            <div class="savings-copy">
+              <strong>${escapeHTML(INR.format(result.gain))} estimated growth</strong>
+              <p>Total invested is compared with projected corpus. Actual market returns can be very different.</p>
+            </div>
+          </div>
+          <div class="insight-grid">
+            <div class="insight"><small>Total invested</small><strong>${escapeHTML(INR.format(result.invested))}</strong></div>
+            <div class="insight"><small>Estimated corpus</small><strong>${escapeHTML(INR.format(result.corpus))}</strong></div>
+            <div class="insight"><small>Estimated gain</small><strong>${escapeHTML(INR.format(result.gain))}</strong></div>
+            <div class="insight"><small>Monthly SIP start</small><strong>${escapeHTML(INR.format(input.sip))}</strong></div>
+          </div>
+          <div class="chart-wrap">${renderValueChart(result.yearly.slice(-10), "Corpus path")}</div>
+          <div class="notice">This is only a planning model using assumed returns. It is not investment advice.</div>
+        </div>
+      `;
+    }
+
+    /* ---------- Gold and silver fund tracker ---------- */
+    async function runMetalTracker() {
+      showError(els.metalError, "");
+      setStatus(els.metalStatus, true);
+      els.runMetalsBtn.disabled = true;
+      try {
+        const candidates = await getMetalCandidates(els.metalType.value, els.metalView.value);
+        if (!candidates.length) throw new Error("MFapi did not return metal fund search results.");
+        const analysed = (await Promise.all(candidates.slice(0, 12).map(async candidate => {
+          try {
+            const analysis = await getAnalysedFund(candidate);
+            if (!analysis || !analysis.latest || !isRecentNav(analysis.latest.date)) return null;
+            analysis.metalRank = analysis.score + (/direct/i.test(analysis.name) ? 8 : 0) + (/growth/i.test(analysis.name) ? 5 : 0);
+            return analysis;
+          } catch (_) {
+            return null;
+          }
+        }))).filter(Boolean)
+          .sort((a, b) => b.metalRank - a.metalRank)
+          .slice(0, 6);
+        if (!analysed.length) throw new Error("MFapi returned insufficient recent NAV history for metal funds.");
+        renderMetalResults(analysed);
+      } catch (error) {
+        showError(els.metalError, error.message || "Could not load metal funds.");
+      } finally {
+        setStatus(els.metalStatus, false);
+        els.runMetalsBtn.disabled = false;
+      }
+    }
+
+    async function getMetalCandidates(type, view) {
+      const gold = ["gold fund growth", "gold etf fund of fund growth", "gold savings fund growth"];
+      const silver = ["silver etf fund of fund growth", "silver fund growth", "silver etf growth"];
+      const queries = type === "gold" ? gold : type === "silver" ? silver : gold.concat(silver);
+      const items = (await Promise.all(queries.map(query => searchFunds(query).catch(() => [])))).flat();
+      const map = new Map();
+      items.forEach(item => {
+        if (!item || !item.schemeName) return;
+        const name = item.schemeName;
+        if (/idcw|dividend|bonus/i.test(name)) return;
+        if (view === "direct" && !/direct/i.test(name)) return;
+        const family = name.toLowerCase()
+          .replace(/\b(direct|regular|growth|plan|option|fund of fund|fof)\b/g, "")
+          .replace(/[^a-z0-9]+/g, " ")
+          .trim();
+        if (!map.has(family) || /direct/i.test(name)) map.set(family, item);
+      });
+      return Array.from(map.values());
+    }
+
+    function renderMetalResults(funds) {
+      const best = funds[0];
+      els.metalResults.innerHTML = `
+        <h3 class="step-title">Metal fund history</h3>
+        <p class="section-copy" style="margin-bottom:16px">Closest historical score: <strong>${escapeHTML(cleanName(best.name))}</strong>. This is not a recommendation.</p>
+        <div class="chart-wrap">${renderReturnChartRows(funds.slice(0, 4), "y1")}</div>
+        <div class="table-wrap" style="margin-top:14px">
+          <table>
+            <thead><tr><th>Fund</th><th>1M</th><th>6M</th><th>1Y</th><th>3Y CAGR</th><th>Score</th></tr></thead>
+            <tbody>
+              ${funds.map(fund => `
+                <tr>
+                  <td><strong>${escapeHTML(cleanName(fund.name))}</strong><div class="meta-line">${escapeHTML(metaLabel(fund))}</div></td>
+                  <td>${escapeHTML(formatPercent(fund.periodReturns?.m1))}</td>
+                  <td>${escapeHTML(formatPercent(fund.periodReturns?.m6))}</td>
+                  <td>${escapeHTML(formatPercent(fund.periodReturns?.y1))}</td>
+                  <td>${escapeHTML(formatPercent(fund.periodReturns?.y3))}</td>
+                  <td>${fund.score}/100</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+        <div class="notice">Metal funds can be volatile. Returns are calculated from NAV history and do not predict gold or silver prices.</div>
+      `;
+    }
+
     /* ---------- Charts and utilities ---------- */
     function renderBarChart(results, valueFn, label) {
       const max = Math.max(...results.map(valueFn), 1);
@@ -3007,6 +3263,24 @@
                 <strong title="${escapeAttr(item.name)}">${escapeHTML(shortName(item.name))}</strong>
                 <div class="bar-track"><div class="bar-fill" style="width:${width}%"></div></div>
                 <span>${escapeHTML(INR.format(value))}</span>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
+    }
+
+    function renderValueChart(points, label) {
+      const max = Math.max(...points.map(point => point.value), 1);
+      return `
+        <div class="bar-chart" aria-label="${escapeAttr(label)} chart">
+          ${points.map(point => {
+            const width = Math.max(4, Math.round(point.value / max * 100));
+            return `
+              <div class="bar-row">
+                <strong>${escapeHTML(point.name)}</strong>
+                <div class="bar-track"><div class="bar-fill" style="width:${width}%"></div></div>
+                <span>${escapeHTML(INR.format(point.value))}</span>
               </div>
             `;
           }).join("")}
