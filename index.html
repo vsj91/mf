@@ -2184,24 +2184,24 @@
       els.loanResults.innerHTML = `
         <div class="freedom-card">
           <div class="freedom-hero">
-            <small>${canStudyClosure ? "Possible earlier closure" : "Possible study point"}</small>
+            <small>${canStudyClosure ? "Estimated time saved" : "Loan result"}</small>
             <strong>${escapeHTML(canStudyClosure ? monthsLabel(monthsEarlier) + " earlier" : heroTitle)}</strong>
-            <span>${escapeHTML(canStudyClosure ? `If the side corpus is used for a loan prepayment study around ${heroTitle}, the loan could be compared for closure about ${monthsLabel(monthsEarlier)} before the regular EMI-only path.` : heroText)}</span>
+            <span>${escapeHTML(canStudyClosure ? `With this SIP assumption, your side corpus may become close to the remaining loan balance around ${heroTitle}. That is about ${monthsLabel(monthsEarlier)} before the regular EMI-only payoff path.` : heroText)}</span>
           </div>
           <div class="savings-circle-wrap">
             <div class="savings-circle" style="--save:${savePercent}"><span>${savePercent}%<br>saved</span></div>
             <div class="savings-copy">
               <strong>${escapeHTML(INR.format(plan.savedInterest))} interest potentially saved</strong>
-              <p>Compared with paying only the regular EMI, this estimates the future loan interest that may be avoided if the side corpus is used to study prepayment at the shown point.</p>
+              <p>Compared with paying only the regular EMI, this estimates the future loan interest that may be avoided if the side corpus is used for a loan prepayment calculation.</p>
             </div>
           </div>
           <div class="insight-grid">
             <div class="insight"><small>Current payoff path</small><strong>${escapeHTML(monthsLabel(plan.naturalMonths))}</strong></div>
-            <div class="insight"><small>Possible closure study point</small><strong>${escapeHTML(canStudyClosure ? heroTitle : "Not reached")}</strong></div>
+            <div class="insight"><small>Side corpus reaches balance</small><strong>${escapeHTML(canStudyClosure ? heroTitle : "Not reached")}</strong></div>
             <div class="insight"><small>Time potentially saved</small><strong>${escapeHTML(canStudyClosure ? monthsLabel(monthsEarlier) : "Not available")}</strong></div>
             <div class="insight"><small>Future interest on EMI path</small><strong>${escapeHTML(INR.format(plan.naturalInterest))}</strong></div>
-            <div class="insight"><small>Side corpus at study point</small><strong>${escapeHTML(INR.format(closureCorpus))}</strong></div>
-            <div class="insight"><small>Loan balance at study point</small><strong>${escapeHTML(INR.format(closureBalance))}</strong></div>
+            <div class="insight"><small>Side corpus at that time</small><strong>${escapeHTML(INR.format(closureCorpus))}</strong></div>
+            <div class="insight"><small>Loan balance at that time</small><strong>${escapeHTML(INR.format(closureBalance))}</strong></div>
           </div>
           <div class="timeline">
             <div class="timeline-track"><div class="timeline-fill" style="width:${canStudyClosure ? plan.progress : 100}%"></div></div>
@@ -2219,7 +2219,7 @@
       if (!plan.closure) {
         return "This does not mean the SIP is bad or the loan must continue. It only means the assumed side corpus does not cross the projected loan balance within the entered tenure.";
       }
-      return `Planning view only: if you studied closure around ${monthsLabel(plan.closureMonth)}, the model estimates about ${INR.format(plan.savedInterest)} of future loan interest could be avoided versus the EMI-only path. Taxes, exit loads, fund returns, and lender charges are not included.`;
+      return `Planning view only: if the side corpus is considered for loan prepayment around ${monthsLabel(plan.closureMonth)}, the model estimates about ${INR.format(plan.savedInterest)} of future loan interest could be avoided versus the EMI-only path. Taxes, exit loads, fund returns, and lender charges are not included.`;
     }
 
     function monthsLabel(months) {
