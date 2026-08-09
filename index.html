@@ -1,0 +1,1958 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Fund Finder India helps beginners shortlist mutual funds by goal, time horizon, risk profile, historical NAV performance, and SIP simulations.">
+  <title>Fund Finder India</title>
+  <style>
+    :root {
+      --bg: #f5f5f7;
+      --paper: #ffffff;
+      --ink: #1d1d1f;
+      --muted: #6e6e73;
+      --line: #e5e5ea;
+      --brand: #007a5a;
+      --brand-2: #0a9f7b;
+      --accent: #f6b944;
+      --soft: #edf8f4;
+      --rose: #fff0ec;
+      --blue: #eef5ff;
+      --shadow: 0 22px 60px rgba(29, 29, 31, .08);
+      --radius: 28px;
+      --radius-sm: 16px;
+      --danger: #b42318;
+      --good: #0b7a47;
+      --warn: #9a6700;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top, rgba(10, 159, 123, .12), transparent 32rem),
+        linear-gradient(180deg, #fbfbfd 0%, var(--bg) 58%, #ffffff 100%);
+      min-height: 100vh;
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    a { color: inherit; }
+    .shell { width: min(1160px, calc(100% - 32px)); margin: 0 auto; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(245, 245, 247, .82);
+      border-bottom: 1px solid rgba(229, 229, 234, .72);
+    }
+    .nav {
+      min-height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      color: white;
+      background: linear-gradient(135deg, var(--brand), #0bb68f);
+      box-shadow: 0 10px 24px rgba(8, 107, 88, .24);
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      padding: 6px;
+      border: 1px solid rgba(229, 229, 234, .9);
+      background: rgba(255, 255, 255, .7);
+      border-radius: 999px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 14px;
+      color: var(--muted);
+      background: transparent;
+      white-space: nowrap;
+      transition: .2s ease;
+      font-weight: 750;
+    }
+    .tab.active {
+      color: #fff;
+      background: var(--brand);
+      box-shadow: 0 10px 24px rgba(8, 107, 88, .18);
+    }
+    .hero {
+      padding: 44px 0 18px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(280px, .9fr);
+      gap: 28px;
+      align-items: center;
+    }
+    .eyebrow {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      width: fit-content;
+      padding: 8px 12px;
+      border: 1px solid rgba(229, 229, 234, .9);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .74);
+      color: var(--brand);
+      font-weight: 750;
+      font-size: 13px;
+    }
+    h1 {
+      margin: 18px 0 14px;
+      font-size: clamp(40px, 6vw, 68px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(18px, 2.1vw, 25px);
+      line-height: 1.38;
+      max-width: 680px;
+    }
+    .hero-actions {
+      margin-top: 26px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      border: 0;
+      border-radius: 999px;
+      min-height: 48px;
+      padding: 0 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-weight: 850;
+      transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+      text-decoration: none;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary {
+      color: #fff;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      box-shadow: 0 14px 32px rgba(0, 122, 90, .22);
+    }
+    .btn-secondary {
+      color: var(--ink);
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, .84);
+    }
+    .btn-ghost {
+      color: var(--brand);
+      background: var(--soft);
+      padding: 0 14px;
+      min-height: 40px;
+    }
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: .6;
+      transform: none;
+      box-shadow: none;
+    }
+    .btn .spinner {
+      width: 16px;
+      height: 16px;
+      border-width: 2px;
+      border-color: rgba(255, 255, 255, .36);
+      border-top-color: #fff;
+    }
+    .hero-panel {
+      border: 1px solid rgba(229, 229, 234, .95);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .72);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+    .mini-stack { display: grid; gap: 10px; }
+    .mini-row {
+      display: grid;
+      grid-template-columns: 38px 1fr;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: #fff;
+    }
+    .mini-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--soft);
+      font-size: 22px;
+    }
+    .mini-title { font-weight: 800; }
+    .mini-sub { color: var(--muted); font-size: 13px; margin-top: 2px; line-height: 1.35; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: #fff8e7;
+      color: #7a4d00;
+      font-weight: 850;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .notice {
+      margin: 18px 0 0;
+      border: 1px solid rgba(246, 185, 68, .38);
+      background: rgba(255, 250, 236, .78);
+      color: #6a4b08;
+      border-radius: 20px;
+      padding: 12px 14px;
+      line-height: 1.45;
+      font-size: 13px;
+    }
+    main { padding-bottom: 70px; }
+    .section {
+      display: none;
+      padding: 24px 0 36px;
+    }
+    .section.active { display: block; animation: rise .28s ease; }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+    .section-title {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 42px);
+      letter-spacing: 0;
+      line-height: 1;
+    }
+    .section-copy {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.5;
+      max-width: 760px;
+    }
+    .panel {
+      border: 1px solid rgba(229, 229, 234, .95);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .82);
+      box-shadow: 0 16px 48px rgba(29, 29, 31, .06);
+      padding: 24px;
+    }
+    .wizard {
+      display: grid;
+      gap: 18px;
+    }
+    .step-title {
+      margin: 0 0 12px;
+      font-size: 20px;
+      letter-spacing: 0;
+    }
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .choice {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: #fff;
+      padding: 15px;
+      min-height: 104px;
+      text-align: left;
+      transition: .2s ease;
+    }
+    .choice:hover, .choice.selected {
+      border-color: rgba(8, 107, 88, .5);
+      box-shadow: 0 14px 34px rgba(0, 122, 90, .10);
+      transform: translateY(-2px);
+    }
+    .choice.selected::after {
+      content: "✓";
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--brand);
+      font-weight: 900;
+    }
+    .choice .icon { font-size: 28px; display: block; margin-bottom: 10px; }
+    .choice strong { display: block; font-size: 17px; }
+    .choice span { display: block; color: var(--muted); margin-top: 5px; font-size: 13px; line-height: 1.35; }
+    .choice .mobile-short { display: none; }
+    .goal-select-wrap {
+      display: grid;
+      gap: 8px;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: minmax(190px, 280px) 1fr;
+      gap: 18px;
+      align-items: center;
+    }
+    label { font-weight: 850; }
+    .input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      min-height: 52px;
+      padding: 0 14px;
+      background: #fff;
+      color: var(--ink);
+      outline: none;
+    }
+    .input:focus {
+      border-color: var(--brand-2);
+      box-shadow: 0 0 0 4px rgba(14, 143, 118, .12);
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--brand);
+    }
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .segment {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+      padding: 13px 12px;
+      font-weight: 780;
+      transition: .18s ease;
+    }
+    .segment.selected {
+      color: #fff;
+      border-color: var(--brand);
+      background: var(--brand);
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .status {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-weight: 750;
+    }
+    .status.show { display: flex; }
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 3px solid rgba(8, 107, 88, .18);
+      border-top-color: var(--brand);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .results-grid {
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .fund-card {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: #fff;
+      padding: 18px;
+      box-shadow: 0 16px 40px rgba(29, 29, 31, .07);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .fund-card.best {
+      border-color: rgba(244, 185, 66, .9);
+      box-shadow: 0 18px 42px rgba(154, 103, 0, .15);
+    }
+    .study-mix {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, .86);
+      padding: 18px;
+      display: grid;
+      grid-template-columns: 180px minmax(0, 1fr);
+      gap: 18px;
+      align-items: center;
+      box-shadow: 0 16px 42px rgba(29, 29, 31, .06);
+    }
+    .mix-donut {
+      width: 168px;
+      height: 168px;
+      border-radius: 50%;
+      background: conic-gradient(var(--brand) 0 100%);
+      display: grid;
+      place-items: center;
+      margin: 0 auto;
+    }
+    .mix-donut::after {
+      content: "Study mix";
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: #fff;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-weight: 850;
+      font-size: 13px;
+      text-align: center;
+      padding: 8px;
+    }
+    .mix-title {
+      margin: 0 0 6px;
+      font-size: 21px;
+      letter-spacing: 0;
+    }
+    .mix-list {
+      display: grid;
+      gap: 9px;
+      margin-top: 12px;
+    }
+    .mix-item {
+      display: grid;
+      grid-template-columns: 14px minmax(0, 1fr) auto;
+      gap: 9px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .mix-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--brand);
+    }
+    .mix-item strong {
+      color: var(--ink);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .mix-percent {
+      color: var(--ink);
+      font-weight: 900;
+    }
+    .fund-name {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+    .meta-line {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .score-ring {
+      --p: 0;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: conic-gradient(var(--brand) calc(var(--p) * 1%), #e7efec 0);
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+    }
+    .score-ring span {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: #fff;
+      font-weight: 950;
+      font-size: 18px;
+    }
+    .fund-top {
+      display: flex;
+      gap: 14px;
+      justify-content: space-between;
+      align-items: start;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .metrics.primary {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px;
+      background: #fbfbfd;
+      min-height: 68px;
+    }
+    .metric small {
+      display: block;
+      color: var(--muted);
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .metric strong {
+      display: block;
+      font-size: 17px;
+      word-break: break-word;
+    }
+    .why {
+      border-radius: 18px;
+      background: var(--soft);
+      color: #17483c;
+      padding: 12px;
+      line-height: 1.45;
+      font-size: 14px;
+    }
+    .quick-label {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 10px;
+    }
+    .search-box {
+      position: relative;
+      display: grid;
+      gap: 10px;
+    }
+    .search-results {
+      display: grid;
+      gap: 8px;
+      max-height: 270px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+    .search-item {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      text-align: left;
+      transition: .18s ease;
+    }
+    .search-item:hover { border-color: var(--brand-2); background: #fbfffd; }
+    .selected-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 999px;
+      padding: 8px 10px 8px 12px;
+      max-width: 100%;
+    }
+    .chip span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 310px;
+    }
+    .chip button {
+      border: 0;
+      background: var(--rose);
+      color: var(--danger);
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      font-weight: 900;
+    }
+    .two-col {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+      gap: 18px;
+      align-items: start;
+    }
+    .chart-wrap {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      padding: 16px;
+      overflow-x: auto;
+    }
+    .bar-chart {
+      display: grid;
+      gap: 12px;
+      min-width: 320px;
+    }
+    .bar-row {
+      display: grid;
+      grid-template-columns: minmax(112px, 1fr) minmax(150px, 2fr) 96px;
+      gap: 10px;
+      align-items: center;
+      font-size: 13px;
+    }
+    .bar-track {
+      height: 16px;
+      border-radius: 999px;
+      background: #edf3f1;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      width: 0;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--brand), var(--accent));
+      transition: width .5s ease;
+    }
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 820px;
+    }
+    th, td {
+      padding: 13px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #f4faf7;
+      font-size: 13px;
+      color: #38544d;
+    }
+    tr:last-child td { border-bottom: 0; }
+    .best-cell {
+      background: #fff8e7;
+      color: #714b00;
+      font-weight: 900;
+    }
+    .detail {
+      display: none;
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 14px;
+    }
+    .detail.show { display: block; }
+    .learn-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .learn-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+      padding: 18px;
+      min-height: 160px;
+    }
+    .learn-card h3 { margin: 0 0 8px; }
+    .learn-card p { margin: 0; color: var(--muted); line-height: 1.5; }
+    .empty {
+      border: 1px dashed #c4d3ce;
+      border-radius: var(--radius);
+      padding: 24px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, .7);
+      text-align: center;
+    }
+    .error {
+      border: 1px solid #f0b8af;
+      border-radius: 16px;
+      background: #fff4f2;
+      color: var(--danger);
+      padding: 12px 14px;
+      line-height: 1.45;
+      margin-top: 12px;
+    }
+    .mobile-sticky {
+      display: none;
+      position: sticky;
+      bottom: 12px;
+      z-index: 12;
+      padding-top: 8px;
+    }
+    .mobile-sticky .btn { width: 100%; }
+
+    @media (max-width: 880px) {
+      .nav { align-items: start; flex-direction: column; padding: 12px 0; gap: 12px; }
+      .tabs { width: 100%; }
+      .hero { grid-template-columns: 1fr; padding-top: 24px; gap: 12px; }
+      .cards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .results-grid, .learn-grid { grid-template-columns: 1fr; }
+      .form-row, .two-col { grid-template-columns: 1fr; }
+      .segmented { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .section-head { align-items: start; flex-direction: column; }
+      .actions { justify-content: stretch; }
+      .actions .btn { width: 100%; }
+      .desktop-action { display: none; }
+      .mobile-sticky { display: block; }
+      .hero-panel { padding: 14px; }
+      .notice { font-size: 12px; }
+      .metrics.primary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .study-mix { grid-template-columns: 1fr; text-align: center; }
+      .mix-list { text-align: left; }
+    }
+
+    @media (max-width: 520px) {
+      .shell { width: min(100% - 20px, 1160px); }
+      .brand-mark { width: 32px; height: 32px; border-radius: 10px; }
+      .brand { font-size: 15px; }
+      .tab { padding: 9px 12px; font-size: 13px; }
+      .hero { display: none; }
+      h1 { font-size: 31px; margin: 4px 0 8px; line-height: 1.05; }
+      .hero p { font-size: 16px; }
+      .section-head { margin-bottom: 10px; gap: 6px; }
+      .section-title { font-size: 25px; }
+      .wizard { gap: 14px; }
+      .step-title { font-size: 17px; margin-bottom: 9px; }
+      .panel { padding: 14px; border-radius: 22px; }
+      .choice { min-height: 74px; padding: 10px 10px 9px; border-radius: 18px; }
+      .choice .icon { font-size: 21px; margin-bottom: 4px; }
+      .choice strong { font-size: 13px; line-height: 1.15; }
+      .choice .desktop-hint { display: none; }
+      .choice .mobile-short { display: block; font-size: 11px; margin-top: 3px; }
+      .choice.selected::after { width: 20px; height: 20px; top: 8px; right: 8px; font-size: 12px; }
+      .section-copy { display: none; }
+      .btn { min-height: 50px; }
+      .mini-row { grid-template-columns: 40px 1fr; }
+      .mini-row .pill { grid-column: 2; width: fit-content; }
+      .bar-row { grid-template-columns: 1fr; gap: 6px; }
+      .chip span { max-width: 220px; }
+      .metrics.primary { grid-template-columns: 1fr; }
+      .fund-top { align-items: center; }
+      .section { padding-top: 18px; }
+      .study-mix { padding: 14px; border-radius: 22px; }
+      .mix-donut { width: 132px; height: 132px; }
+      .mix-donut::after { width: 78px; height: 78px; font-size: 12px; }
+      .mix-title { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell nav">
+      <div class="brand" aria-label="Fund Finder India">
+        <div class="brand-mark" aria-hidden="true">₹</div>
+        <span>Fund Finder India</span>
+      </div>
+      <nav class="tabs" aria-label="Primary navigation">
+        <button class="tab active" data-tab="find">Find Funds</button>
+        <button class="tab" data-tab="sip">SIP Challenge</button>
+        <button class="tab" data-tab="compare">Compare</button>
+        <button class="tab" data-tab="learn">Learn</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="shell">
+    <section class="hero" aria-labelledby="hero-title">
+      <div>
+        <div class="eyebrow">Simple fund discovery • Live MFapi.in data</div>
+        <h1 id="hero-title">Find mutual funds that fit YOU — not just the highest return.</h1>
+        <p>Goal + Time + Risk → smarter fund shortlisting.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#find">Start finding funds</a>
+          <a class="btn btn-secondary" href="#sip">Try ₹10,000 SIP Challenge</a>
+        </div>
+        <div class="notice">
+          This tool is for educational and analytical purposes only. Mutual fund investments are subject to market risks. Historical returns do not guarantee future performance. Consider consulting a SEBI-registered investment adviser before investing.
+        </div>
+      </div>
+      <aside class="hero-panel" aria-label="What this app analyses">
+        <div class="mini-stack">
+          <div class="mini-row">
+            <div class="mini-icon" aria-hidden="true">1</div>
+            <div><div class="mini-title">Choose your goal</div><div class="mini-sub">Tell the app what the money is for.</div></div>
+          </div>
+          <div class="mini-row">
+            <div class="mini-icon" aria-hidden="true">2</div>
+            <div><div class="mini-title">Set time and risk</div><div class="mini-sub">Shortlist funds that match your comfort.</div></div>
+          </div>
+          <div class="mini-row">
+            <div class="mini-icon" aria-hidden="true">3</div>
+            <div><div class="mini-title">Review the shortlist</div><div class="mini-sub">See the essentials first, details on tap.</div></div>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </div>
+
+  <main class="shell">
+    <section id="find" class="section active" aria-labelledby="find-title">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="find-title">Find Funds</h2>
+          <p class="section-copy">Four quick choices. Then a clean shortlist based on category fit and historical NAV data.</p>
+        </div>
+      </div>
+
+      <div class="panel wizard">
+        <div>
+          <h3 class="step-title">What are you investing for?</h3>
+          <div class="goal-select-wrap">
+            <label for="goalSelect">Goal</label>
+            <select class="input" id="goalSelect" aria-label="Investment goal"></select>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="step-title">Monthly investment amount</h3>
+          <div class="form-row">
+            <div>
+              <label for="monthlyAmount">Amount</label>
+              <input class="input" id="monthlyAmount" inputmode="numeric" value="10000" aria-label="Monthly investment amount in rupees">
+            </div>
+            <div>
+              <label for="monthlySlider">Adjust amount</label>
+              <input id="monthlySlider" type="range" min="1000" max="200000" step="1000" value="10000">
+              <div class="meta-line" id="monthlyPretty">₹10,000 per month</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="step-title">Investment duration</h3>
+          <div class="segmented" id="durationChoices"></div>
+        </div>
+
+        <div>
+          <h3 class="step-title">Risk level</h3>
+          <div class="segmented" id="riskChoices"></div>
+        </div>
+
+        <div class="actions desktop-action">
+          <div class="status" id="findStatus"><span class="spinner"></span><span>Analysing funds from MFapi...</span></div>
+          <button class="btn btn-primary" id="findFundsBtn">Find My Funds</button>
+        </div>
+        <div class="mobile-sticky">
+          <button class="btn btn-primary" id="findFundsMobileBtn">Find My Funds</button>
+        </div>
+        <div id="findError"></div>
+      </div>
+
+      <div id="recommendationResults"></div>
+    </section>
+
+    <section id="sip" class="section" aria-labelledby="sip-title">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="sip-title">₹10,000 SIP Challenge</h2>
+          <p class="section-copy">Pick up to three funds and replay a historical monthly SIP using actual NAV dates.</p>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="panel">
+          <h3 class="step-title">Select funds</h3>
+          <div class="search-box">
+            <label for="sipSearch">Search mutual funds</label>
+            <input class="input" id="sipSearch" placeholder="Try: Parag Parikh, Nifty, HDFC Balanced" autocomplete="off">
+            <div class="status" id="sipSearchStatus"><span class="spinner"></span><span>Searching...</span></div>
+            <div class="search-results" id="sipSearchResults"></div>
+          </div>
+          <div class="selected-list" id="sipSelected"></div>
+          <div style="height:18px"></div>
+          <div class="form-row">
+            <div>
+              <label for="sipAmount">Monthly SIP</label>
+              <input class="input" id="sipAmount" inputmode="numeric" value="10000">
+            </div>
+            <div>
+              <label for="sipYears">Duration</label>
+              <select class="input" id="sipYears">
+                <option value="3">3 years</option>
+                <option value="5" selected>5 years</option>
+                <option value="10">10 years</option>
+              </select>
+            </div>
+          </div>
+          <div class="actions" style="margin-top:16px">
+            <div class="status" id="sipStatus"><span class="spinner"></span><span>Simulating SIPs...</span></div>
+            <button class="btn btn-primary" id="runSipBtn">Run SIP Challenge</button>
+          </div>
+          <div id="sipError"></div>
+        </div>
+        <div id="sipResults" class="panel">
+          <div class="empty">Search and select funds to begin the SIP challenge.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="compare" class="section" aria-labelledby="compare-title">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="compare-title">Compare Funds</h2>
+          <p class="section-copy">Search 2–4 funds and compare the numbers that matter most.</p>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="search-box">
+          <label for="compareSearch">Search and add 2–4 funds</label>
+          <input class="input" id="compareSearch" placeholder="Search any mutual fund" autocomplete="off">
+          <div class="status" id="compareSearchStatus"><span class="spinner"></span><span>Searching...</span></div>
+          <div class="search-results" id="compareSearchResults"></div>
+        </div>
+        <div class="selected-list" id="compareSelected"></div>
+        <div class="actions" style="margin-top:16px">
+          <div class="status" id="compareStatus"><span class="spinner"></span><span>Comparing funds...</span></div>
+          <button class="btn btn-primary" id="runCompareBtn">Compare Funds</button>
+        </div>
+        <div id="compareError"></div>
+      </div>
+      <div id="compareResults" style="margin-top:18px"></div>
+    </section>
+
+    <section id="learn" class="section" aria-labelledby="learn-title">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="learn-title">Learn</h2>
+          <p class="section-copy">Plain-English meanings for the numbers shown in this tool.</p>
+        </div>
+      </div>
+      <div class="learn-grid">
+        <article class="learn-card"><h3>CAGR</h3><p>Compound annual growth rate shows the smoothed yearly growth between two NAV points. It is historical, not a forecast.</p></article>
+        <article class="learn-card"><h3>SIP</h3><p>A systematic investment plan invests a fixed amount regularly. This tool reconstructs historical units bought using past NAVs.</p></article>
+        <article class="learn-card"><h3>NAV</h3><p>Net asset value is the per-unit value of a mutual fund. Your units multiplied by latest NAV gives current value.</p></article>
+        <article class="learn-card"><h3>Volatility</h3><p>Volatility measures how much monthly returns moved around. Lower volatility usually means a smoother ride.</p></article>
+        <article class="learn-card"><h3>Drawdown</h3><p>Maximum drawdown estimates the biggest historical fall from a previous high NAV to a later low NAV.</p></article>
+        <article class="learn-card"><h3>Direct vs Regular</h3><p>Direct plans are bought without distributor commission and often have lower expense ratios. Regular plans include distributor commission.</p></article>
+        <article class="learn-card"><h3>Growth vs IDCW</h3><p>Growth plans keep gains invested in the fund. IDCW plans may distribute income, so NAV return comparison can be less straightforward.</p></article>
+        <article class="learn-card"><h3>Fund Score</h3><p>The score combines historical return, consistency, volatility, drawdown, and available history. It is an analytical shortlist score, not advice.</p></article>
+        <article class="learn-card"><h3>Risk reminder</h3><p>Market funds can lose value. Category fit and history help analysis, but they cannot remove uncertainty.</p></article>
+      </div>
+      <div class="notice">
+        This tool is for educational and analytical purposes only. Mutual fund investments are subject to market risks. Historical returns do not guarantee future performance. Consider consulting a SEBI-registered investment adviser before investing.
+      </div>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+
+    /* ---------- Constants and state ---------- */
+    const API_BASE = "https://api.mfapi.in/mf";
+    const SEARCH_TTL = 1000 * 60 * 60 * 24 * 30;
+    const DETAIL_TTL = 1000 * 60 * 60 * 24 * 7;
+    const ANALYSIS_TTL = 1000 * 60 * 60 * 24 * 7;
+    const INR = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
+    const PCT = new Intl.NumberFormat("en-IN", { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+    const goals = [
+      { id: "wealth", icon: "🚀", title: "Wealth Creation", hint: "Longer horizon, growth-focused categories." },
+      { id: "retirement", icon: "🌅", title: "Retirement", hint: "Long-term compounding with risk control." },
+      { id: "house", icon: "🏡", title: "House", hint: "Match risk to when you need the money." },
+      { id: "education", icon: "🎓", title: "Child Education", hint: "Balance growth and predictability." },
+      { id: "travel", icon: "✈", title: "Travel", hint: "Shorter goals need steadier categories." },
+      { id: "emergency", icon: "🛟", title: "Emergency Fund", hint: "Capital stability matters most." }
+    ];
+    const durations = [
+      { id: "1-3", label: "1–3 years", years: 3 },
+      { id: "3-5", label: "3–5 years", years: 5 },
+      { id: "5-10", label: "5–10 years", years: 10 },
+      { id: "10+", label: "10+ years", years: 12 }
+    ];
+    const risks = ["Low", "Moderate", "High", "Very High"];
+
+    const state = {
+      goal: "wealth",
+      duration: "5-10",
+      risk: "Moderate",
+      sipSelected: [],
+      compareSelected: []
+    };
+
+    const els = {};
+
+    document.addEventListener("DOMContentLoaded", init);
+
+    function init() {
+      cacheEls();
+      renderChoices();
+      wireTabs();
+      wireInputs();
+      wireSearch("sipSearch", "sipSearchResults", "sipSearchStatus", addSipFund, 3);
+      wireSearch("compareSearch", "compareSearchResults", "compareSearchStatus", addCompareFund, 4);
+      updateAmountUI();
+      prefetchRecommendationSearches();
+    }
+
+    function cacheEls() {
+      [
+        "goalSelect", "durationChoices", "riskChoices", "monthlyAmount", "monthlySlider", "monthlyPretty",
+        "findFundsBtn", "findFundsMobileBtn", "findStatus", "findError", "recommendationResults",
+        "sipSearch", "sipSearchResults", "sipSearchStatus", "sipSelected", "sipAmount", "sipYears",
+        "runSipBtn", "sipStatus", "sipError", "sipResults", "compareSearch", "compareSearchResults",
+        "compareSearchStatus", "compareSelected", "runCompareBtn", "compareStatus", "compareError", "compareResults"
+      ].forEach(id => { els[id] = document.getElementById(id); });
+    }
+
+    /* ---------- UI rendering ---------- */
+    function renderChoices() {
+      els.goalSelect.innerHTML = goals.map(goal => `
+        <option value="${escapeAttr(goal.id)}" ${goal.id === state.goal ? "selected" : ""}>${goal.icon} ${escapeHTML(goal.title)}</option>
+      `).join("");
+      els.durationChoices.innerHTML = durations.map(duration => `
+        <button class="segment ${duration.id === state.duration ? "selected" : ""}" data-duration="${escapeAttr(duration.id)}" type="button">${escapeHTML(duration.label)}</button>
+      `).join("");
+      els.riskChoices.innerHTML = risks.map(risk => `
+        <button class="segment ${risk === state.risk ? "selected" : ""}" data-risk="${escapeAttr(risk)}" type="button">${escapeHTML(risk)}</button>
+      `).join("");
+    }
+
+    function wireTabs() {
+      document.querySelectorAll(".tab").forEach(tab => {
+        tab.addEventListener("click", () => showTab(tab.dataset.tab));
+      });
+      document.querySelectorAll("a[href^='#']").forEach(anchor => {
+        anchor.addEventListener("click", event => {
+          const id = anchor.getAttribute("href").slice(1);
+          if (document.getElementById(id)) {
+            event.preventDefault();
+            showTab(id);
+            document.getElementById(id).scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        });
+      });
+    }
+
+    function showTab(id) {
+      document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === id));
+      document.querySelectorAll(".section").forEach(s => s.classList.toggle("active", s.id === id));
+      history.replaceState(null, "", "#" + id);
+    }
+
+    function wireInputs() {
+      els.goalSelect.addEventListener("change", event => {
+        state.goal = event.target.value;
+        prefetchRecommendationSearches();
+      });
+      els.durationChoices.addEventListener("click", event => {
+        const button = event.target.closest("[data-duration]");
+        if (!button) return;
+        state.duration = button.dataset.duration;
+        renderChoices();
+        prefetchRecommendationSearches();
+      });
+      els.riskChoices.addEventListener("click", event => {
+        const button = event.target.closest("[data-risk]");
+        if (!button) return;
+        state.risk = button.dataset.risk;
+        renderChoices();
+        prefetchRecommendationSearches();
+      });
+      els.monthlySlider.addEventListener("input", () => {
+        els.monthlyAmount.value = els.monthlySlider.value;
+        updateAmountUI();
+      });
+      els.monthlyAmount.addEventListener("input", () => {
+        const value = readMoney(els.monthlyAmount.value);
+        if (value) els.monthlySlider.value = clamp(value, 1000, 200000);
+        updateAmountUI();
+      });
+      els.findFundsBtn.addEventListener("click", findFunds);
+      els.findFundsMobileBtn.addEventListener("click", findFunds);
+      els.runSipBtn.addEventListener("click", runSipChallenge);
+      els.runCompareBtn.addEventListener("click", runCompare);
+    }
+
+    function updateAmountUI() {
+      const amount = readMoney(els.monthlyAmount.value) || 0;
+      els.monthlyPretty.textContent = `${INR.format(amount)} per month`;
+    }
+
+    function renderSelected(container, selected, removeFn) {
+      container.innerHTML = selected.map(fund => `
+        <span class="chip">
+          <span title="${escapeAttr(fund.schemeName)}">${escapeHTML(cleanName(fund.schemeName))}</span>
+          <button type="button" aria-label="Remove ${escapeAttr(fund.schemeName)}" data-code="${escapeAttr(fund.schemeCode)}">×</button>
+        </span>
+      `).join("");
+      container.querySelectorAll("button").forEach(button => {
+        button.addEventListener("click", () => removeFn(String(button.dataset.code)));
+      });
+    }
+
+    function setStatus(el, show) {
+      el.classList.toggle("show", Boolean(show));
+    }
+
+    function setFindLoading(isLoading) {
+      const label = isLoading ? `<span class="spinner" aria-hidden="true"></span><span>Finding funds...</span>` : "Find My Funds";
+      [els.findFundsBtn, els.findFundsMobileBtn].forEach(button => {
+        button.disabled = isLoading;
+        button.innerHTML = label;
+        button.setAttribute("aria-busy", String(isLoading));
+      });
+      setStatus(els.findStatus, isLoading);
+    }
+
+    function showError(el, message) {
+      el.innerHTML = message ? `<div class="error">${escapeHTML(message)}</div>` : "";
+    }
+
+    /* ---------- MFapi integration and caching ---------- */
+    async function searchFunds(query) {
+      const cleanQuery = query.trim();
+      if (cleanQuery.length < 2) return [];
+      const cacheKey = "ffi_search_" + cleanQuery.toLowerCase();
+      const cached = readCache(cacheKey, SEARCH_TTL);
+      if (cached) return cached;
+      const response = await fetch(`${API_BASE}/search?q=${encodeURIComponent(cleanQuery)}`);
+      if (!response.ok) throw new Error("MFapi search failed.");
+      const data = await response.json();
+      const deduped = dedupeSearch(Array.isArray(data) ? data : []);
+      writeCache(cacheKey, deduped);
+      return deduped;
+    }
+
+    async function getFundDetails(schemeCode) {
+      const cacheKey = "ffi_detail_" + schemeCode;
+      const cached = readCache(cacheKey, DETAIL_TTL);
+      if (cached) return normalizeDetail(cached);
+      const response = await fetch(`${API_BASE}/${encodeURIComponent(schemeCode)}`);
+      if (!response.ok) throw new Error("Could not download NAV history.");
+      const data = await response.json();
+      writeCache(cacheKey, data);
+      return normalizeDetail(data);
+    }
+
+    async function getAnalysedFund(candidate) {
+      const cacheKey = "ffi_analysis_" + candidate.schemeCode;
+      const cached = readCache(cacheKey, ANALYSIS_TTL);
+      if (cached) return hydrateAnalysis(cached);
+      const detail = await getFundDetails(candidate.schemeCode);
+      if (detail.history.length < 250) return null;
+      const analysis = analyseFund(candidate, detail);
+      const light = stripAnalysisForCache(analysis);
+      writeCache(cacheKey, light);
+      return hydrateAnalysis(light);
+    }
+
+    function readCache(key, ttl) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        const payload = JSON.parse(raw);
+        if (!payload || Date.now() - payload.time > ttl) return null;
+        return payload.value;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function writeCache(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify({ time: Date.now(), value }));
+      } catch (_) {
+        /* Storage can be full or disabled; the app still works without cache. */
+      }
+    }
+
+    function normalizeDetail(raw) {
+      const rows = Array.isArray(raw.data) ? raw.data : [];
+      const history = rows.map(row => ({
+        date: parseMFDate(row.date),
+        nav: Number(row.nav)
+      })).filter(row => row.date instanceof Date && !Number.isNaN(row.nav) && row.nav > 0)
+        .sort((a, b) => a.date - b.date);
+      return {
+        meta: raw.meta || {},
+        history,
+        latest: history[history.length - 1] || null
+      };
+    }
+
+    function stripAnalysisForCache(analysis) {
+      return {
+        code: analysis.code,
+        name: analysis.name,
+        category: analysis.category,
+        type: analysis.type,
+        latest: analysis.latest ? { date: analysis.latest.date.toISOString(), nav: analysis.latest.nav } : null,
+        returns: analysis.returns,
+        volatility: analysis.volatility,
+        consistency: analysis.consistency,
+        maxDrawdown: analysis.maxDrawdown,
+        historyYears: analysis.historyYears,
+        score: analysis.score
+      };
+    }
+
+    function hydrateAnalysis(analysis) {
+      if (!analysis) return null;
+      return {
+        ...analysis,
+        latest: analysis.latest ? { ...analysis.latest, date: new Date(analysis.latest.date) } : null
+      };
+    }
+
+    function dedupeSearch(items) {
+      const directGrowth = [];
+      const fallback = [];
+      const seenNames = new Set();
+      for (const item of items) {
+        if (!item || !item.schemeCode || !item.schemeName) continue;
+        const name = String(item.schemeName);
+        if (/idcw|dividend|bonus|reinvestment/i.test(name)) continue;
+        const key = name.toLowerCase()
+          .replace(/\b(direct|regular|plan|growth|option)\b/g, "")
+          .replace(/[^a-z0-9]+/g, " ")
+          .trim();
+        if (seenNames.has(key)) continue;
+        seenNames.add(key);
+        const entry = { schemeCode: String(item.schemeCode), schemeName: name };
+        if (/direct/i.test(name) && /growth/i.test(name)) directGrowth.push(entry);
+        else fallback.push(entry);
+      }
+      return directGrowth.concat(fallback).slice(0, 30);
+    }
+
+    function wireSearch(inputId, resultsId, statusId, addFn, limit) {
+      const input = els[inputId];
+      const results = els[resultsId];
+      const status = els[statusId];
+      const run = debounce(async () => {
+        const query = input.value.trim();
+        results.innerHTML = "";
+        if (query.length < 2) return;
+        setStatus(status, true);
+        try {
+          const funds = await searchFunds(query);
+          results.innerHTML = funds.length ? funds.slice(0, 10).map(fund => `
+            <button class="search-item" type="button" data-code="${escapeAttr(fund.schemeCode)}" data-name="${escapeAttr(fund.schemeName)}">
+              <span>${escapeHTML(cleanName(fund.schemeName))}</span>
+              <span class="pill">Add</span>
+            </button>
+          `).join("") : `<div class="empty">No matching funds found.</div>`;
+          results.querySelectorAll(".search-item").forEach(button => {
+            button.addEventListener("click", () => {
+              addFn({ schemeCode: String(button.dataset.code), schemeName: button.dataset.name }, limit);
+              input.value = "";
+              results.innerHTML = "";
+            });
+          });
+        } catch (error) {
+          results.innerHTML = `<div class="error">${escapeHTML(error.message || "Search failed. Please try again.")}</div>`;
+        } finally {
+          setStatus(status, false);
+        }
+      }, 350);
+      input.addEventListener("input", run);
+    }
+
+    /* ---------- Recommendations ---------- */
+    async function findFunds() {
+      showError(els.findError, "");
+      els.recommendationResults.innerHTML = "";
+      setFindLoading(true);
+      try {
+        const amount = readMoney(els.monthlyAmount.value) || 10000;
+        const profile = getProfile();
+        const candidates = await getRecommendationCandidates(profile);
+        if (!candidates.length) throw new Error("Could not find candidate funds for this profile.");
+        const analysed = (await Promise.all(candidates.slice(0, 8).map(async candidate => {
+          try {
+            const analysis = await getAnalysedFund(candidate);
+            if (!analysis) return null;
+            analysis.profileFit = profileFitScore(analysis, profile);
+            analysis.finalRank = analysis.score + analysis.profileFit;
+            return analysis;
+          } catch (_) {
+            return null;
+          }
+        }))).filter(Boolean);
+        const results = analysed
+          .filter(fund => fund.latest)
+          .sort((a, b) => b.finalRank - a.finalRank)
+          .slice(0, 3);
+        if (!results.length) throw new Error("MFapi returned insufficient NAV history for the shortlisted funds. Try a different risk or duration.");
+        renderRecommendations(results, profile, amount);
+      } catch (error) {
+        showError(els.findError, error.message || "Something went wrong while finding funds.");
+      } finally {
+        setFindLoading(false);
+      }
+    }
+
+    function getProfile() {
+      const duration = durations.find(d => d.id === state.duration) || durations[2];
+      return { goal: state.goal, duration, risk: state.risk };
+    }
+
+    const prefetchRecommendationSearches = debounce(async () => {
+      const profile = getProfile();
+      await Promise.all(recommendationQueries(profile).map(query => searchFunds(query).catch(() => [])));
+    }, 450);
+
+    function recommendationQueries(profile) {
+      const low = ["liquid direct growth", "short duration direct growth"];
+      const moderate = ["balanced advantage direct growth", "large cap direct growth", "index direct growth"];
+      const high = ["flexi cap direct growth", "mid cap direct growth", "large and mid cap direct growth"];
+      const veryHigh = ["small cap direct growth", "mid cap direct growth", "sectoral direct growth"];
+      let base = moderate;
+      if (profile.risk === "Low" || profile.duration.id === "1-3" || profile.goal === "emergency") base = low;
+      if (profile.risk === "High") base = high;
+      if (profile.risk === "Very High") base = veryHigh;
+      if (profile.duration.id === "3-5" && profile.risk !== "Low") base = ["balanced advantage direct growth", "hybrid direct growth", "large cap direct growth", "index direct growth"];
+      if (profile.duration.id === "10+" && profile.risk !== "Low") base = base.concat(["elss direct growth", "nifty 50 index direct growth"]);
+      return [...new Set(base)];
+    }
+
+    async function getRecommendationCandidates(profile) {
+      const searches = await Promise.all(recommendationQueries(profile).map(async query => {
+        try {
+          return (await searchFunds(query)).slice(0, 5);
+        } catch (_) {
+          return [];
+        }
+      }));
+      const all = searches.flat();
+      const map = new Map();
+      all.forEach(fund => {
+        const family = fund.schemeName.toLowerCase()
+          .replace(/\b(direct|regular|growth|plan|option)\b/g, "")
+          .replace(/[^a-z0-9]+/g, " ")
+          .trim();
+        if (!map.has(family) || /direct/i.test(fund.schemeName)) map.set(family, fund);
+      });
+      return Array.from(map.values()).slice(0, 12);
+    }
+
+    function profileFitScore(fund, profile) {
+      const category = `${fund.category} ${fund.type} ${fund.name}`.toLowerCase();
+      let fit = 0;
+      if (/direct/i.test(fund.name)) fit += 4;
+      if (/growth/i.test(fund.name)) fit += 3;
+      if (profile.risk === "Low" && /liquid|overnight|short|corporate|debt|money market|ultra short/.test(category)) fit += 16;
+      if (profile.risk === "Moderate" && /hybrid|balanced|large cap|index|elss|flexi/.test(category)) fit += 13;
+      if (profile.risk === "High" && /flexi|large & mid|large and mid|mid cap|value|equity/.test(category)) fit += 13;
+      if (profile.risk === "Very High" && /small cap|mid cap|sector|thematic|equity/.test(category)) fit += 13;
+      if (profile.duration.id === "1-3" && /liquid|short|debt|corporate|overnight/.test(category)) fit += 10;
+      if ((profile.duration.id === "5-10" || profile.duration.id === "10+") && /equity|index|flexi|cap|elss/.test(category)) fit += 10;
+      if (profile.goal === "emergency" && /liquid|overnight|short/.test(category)) fit += 14;
+      return fit;
+    }
+
+    function renderRecommendations(funds, profile, amount) {
+      const goal = goals.find(g => g.id === profile.goal);
+      els.recommendationResults.innerHTML = `
+        <div class="section-head" style="margin-top:24px">
+          <div>
+            <h2 class="section-title">Your Shortlist</h2>
+            <p class="section-copy">${escapeHTML(goal ? goal.title : "Your goal")} • ${escapeHTML(profile.duration.label)} • ${escapeHTML(profile.risk)} risk • ${escapeHTML(INR.format(amount))}/month</p>
+          </div>
+        </div>
+        <div class="notice">Based on your selected goal, time horizon, and risk level, here are funds whose category and historical NAV behavior match your filters. This is not investment advice.</div>
+        ${renderStudyMix(funds, amount)}
+        <div class="results-grid">
+          ${funds.map((fund, index) => renderFundCard(fund, profile, index === 0)).join("")}
+        </div>
+        <div class="notice">Past performance does not guarantee future returns. The Fund Score is an analytical score, not investment advice.</div>
+      `;
+      els.recommendationResults.querySelectorAll("[data-detail]").forEach(button => {
+        button.addEventListener("click", () => {
+          const detail = button.closest(".fund-card").querySelector(".detail");
+          detail.classList.toggle("show");
+          button.textContent = detail.classList.contains("show") ? "Hide detailed analysis" : "View detailed analysis";
+        });
+      });
+      els.recommendationResults.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function renderStudyMix(funds, amount) {
+      const weights = studyMixWeights(funds);
+      const colors = ["#007a5a", "#f6b944", "#4f8cff", "#d95f59"];
+      let cursor = 0;
+      const stops = weights.map((item, index) => {
+        const start = cursor;
+        cursor += item.percent;
+        return `${colors[index % colors.length]} ${start}% ${cursor}%`;
+      }).join(", ");
+      return `
+        <section class="study-mix" aria-label="Filter-based analysis view">
+          <div class="mix-donut" style="background:conic-gradient(${escapeAttr(stops)})"></div>
+          <div>
+            <h3 class="mix-title">Analysis View</h3>
+            <div class="meta-line">This view shows filter-based weights across the shortlisted funds using historical NAV analysis. It is not a recommendation or advice to invest.</div>
+            <div class="mix-list">
+              ${weights.map((item, index) => `
+                <div class="mix-item">
+                  <span class="mix-swatch" style="background:${colors[index % colors.length]}"></span>
+                  <strong title="${escapeAttr(item.fund.name)}">${escapeHTML(shortName(item.fund.name))}</strong>
+                  <span class="mix-percent">${item.percent}%</span>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+        </section>
+      `;
+    }
+
+    function studyMixWeights(funds) {
+      const raw = funds.map(fund => ({
+        fund,
+        weight: Math.max(12, fund.score + (fund.profileFit || 0) - riskPenaltyForMix(fund))
+      }));
+      const total = raw.reduce((sum, item) => sum + item.weight, 0) || 1;
+      let remaining = 100;
+      return raw.map((item, index) => {
+        const percent = index === raw.length - 1 ? remaining : Math.max(10, Math.round(item.weight / total * 100));
+        remaining -= percent;
+        return { fund: item.fund, percent };
+      });
+    }
+
+    function riskPenaltyForMix(fund) {
+      if (fund.volatility == null) return 0;
+      return Math.round(scale(fund.volatility, 0.04, 0.28) * 12);
+    }
+
+    function renderFundCard(fund, profile, best) {
+      return `
+        <article class="fund-card ${best ? "best" : ""}">
+          <div class="fund-top">
+            <div>
+              <h3 class="fund-name">${escapeHTML(cleanName(fund.name))}</h3>
+              <div class="meta-line">${escapeHTML(metaLabel(fund))}</div>
+              <div class="quick-label">
+                ${best ? `<span class="pill">Closest filter match</span>` : ""}
+                <span class="pill">Risk: ${escapeHTML(riskLabel(fund))}</span>
+              </div>
+            </div>
+            <div class="score-ring" style="--p:${fund.score}"><span>${fund.score}</span></div>
+          </div>
+          <div class="metrics primary">
+            <div class="metric"><small>3Y CAGR</small><strong>${formatPercent(fund.returns.y3)}</strong></div>
+            <div class="metric"><small>5Y CAGR</small><strong>${formatPercent(fund.returns.y5)}</strong></div>
+            <div class="metric"><small>Score</small><strong>${fund.score}/100</strong></div>
+          </div>
+          <div class="why">${escapeHTML(whyMatches(fund, profile))}</div>
+          <button class="btn btn-ghost" type="button" data-detail>View detailed analysis</button>
+          <div class="detail">
+            Latest NAV: ${escapeHTML(formatNav(fund.latest.nav))} on ${escapeHTML(formatDate(fund.latest.date))}. 1Y return: ${escapeHTML(formatPercent(fund.returns.y1))}. 10Y CAGR: ${escapeHTML(formatPercent(fund.returns.y10))}. Volatility: ${escapeHTML(formatPercent(fund.volatility))}. Maximum drawdown: ${escapeHTML(formatPercent(fund.maxDrawdown))}. Positive monthly periods: ${escapeHTML(formatPercent(fund.consistency))}. Available NAV history: ${escapeHTML(fund.historyYears.toFixed(1))} years. The score uses historical return, consistency, volatility, drawdown, and history length. It is not investment advice.
+          </div>
+        </article>
+      `;
+    }
+
+    /* ---------- Analysis math ---------- */
+    function analyseFund(searchItem, detail) {
+      const meta = detail.meta || {};
+      const name = meta.scheme_name || searchItem.schemeName;
+      const category = meta.scheme_category || "";
+      const type = meta.scheme_type || "";
+      const history = detail.history;
+      const latest = detail.latest;
+      const returns = {
+        y1: trailingReturn(history, 1, false),
+        y3: trailingReturn(history, 3, true),
+        y5: trailingReturn(history, 5, true),
+        y10: trailingReturn(history, 10, true)
+      };
+      const monthly = monthlyReturns(history);
+      const volatility = annualizedVolatility(monthly);
+      const consistency = monthly.length ? monthly.filter(v => v > 0).length / monthly.length : null;
+      const maxDrawdown = maximumDrawdown(history);
+      const historyYears = (latest.date - history[0].date) / (365.25 * 24 * 60 * 60 * 1000);
+      const score = fundScore({ returns, volatility, consistency, maxDrawdown, historyYears });
+      return { code: searchItem.schemeCode, name, category, type, history, latest, returns, volatility, consistency, maxDrawdown, historyYears, score };
+    }
+
+    function trailingReturn(history, years, annualized) {
+      const latest = history[history.length - 1];
+      if (!latest) return null;
+      const target = addYears(latest.date, -years);
+      const past = closestNav(history, target);
+      if (!past) return null;
+      const actualYears = (latest.date - past.date) / (365.25 * 24 * 60 * 60 * 1000);
+      if (actualYears < years * .82) return null;
+      const ratio = latest.nav / past.nav;
+      return annualized ? Math.pow(ratio, 1 / actualYears) - 1 : ratio - 1;
+    }
+
+    function monthlyReturns(history) {
+      if (history.length < 2) return [];
+      const byMonth = new Map();
+      history.forEach(point => {
+        const key = `${point.date.getFullYear()}-${String(point.date.getMonth() + 1).padStart(2, "0")}`;
+        byMonth.set(key, point);
+      });
+      const points = Array.from(byMonth.values()).sort((a, b) => a.date - b.date);
+      const returns = [];
+      for (let i = 1; i < points.length; i++) {
+        returns.push(points[i].nav / points[i - 1].nav - 1);
+      }
+      return returns;
+    }
+
+    function annualizedVolatility(returns) {
+      if (returns.length < 6) return null;
+      const mean = returns.reduce((sum, value) => sum + value, 0) / returns.length;
+      const variance = returns.reduce((sum, value) => sum + Math.pow(value - mean, 2), 0) / (returns.length - 1);
+      return Math.sqrt(variance) * Math.sqrt(12);
+    }
+
+    function maximumDrawdown(history) {
+      if (history.length < 2) return null;
+      let peak = history[0].nav;
+      let max = 0;
+      history.forEach(point => {
+        peak = Math.max(peak, point.nav);
+        max = Math.min(max, point.nav / peak - 1);
+      });
+      return max;
+    }
+
+    function fundScore(metrics) {
+      const bestReturn = firstNumber(metrics.returns.y10, metrics.returns.y5, metrics.returns.y3, metrics.returns.y1);
+      const returnScore = scale(bestReturn, -0.02, 0.18) * 35;
+      const consistencyScore = scale(metrics.consistency, 0.42, 0.68) * 20;
+      const volScore = (1 - scale(metrics.volatility, 0.02, 0.28)) * 20;
+      const drawdownScore = (1 - scale(Math.abs(metrics.maxDrawdown || 0), 0.02, 0.55)) * 15;
+      const historyScore = scale(metrics.historyYears, 1, 10) * 10;
+      return Math.round(clamp(returnScore + consistencyScore + volScore + drawdownScore + historyScore, 0, 100));
+    }
+
+    function whyMatches(fund, profile) {
+      const bits = [];
+      if (/direct/i.test(fund.name)) bits.push("it appears to be a Direct plan");
+      if (/growth/i.test(fund.name)) bits.push("it appears to be Growth option");
+      if (fund.returns.y5 != null || fund.returns.y10 != null) bits.push("it has usable long-term NAV history");
+      if (fund.volatility != null) bits.push(`${riskLabel(fund).toLowerCase()} historical volatility`);
+      bits.push(`its category/name fits a ${profile.risk.toLowerCase()} risk, ${profile.duration.label} shortlist`);
+      return "Why it matches: " + bits.slice(0, 4).join(", ") + ".";
+    }
+
+    function riskLabel(fund) {
+      const text = `${fund.category} ${fund.type} ${fund.name}`.toLowerCase();
+      if (/liquid|overnight|money market|short duration|ultra short|corporate bond/.test(text)) return "Low";
+      if (/debt|gilt|banking.*psu|balanced|hybrid|large cap|index/.test(text)) return "Moderate";
+      if (/small cap|sector|thematic/.test(text)) return "Very High";
+      if (/mid cap|equity|flexi|elss|value|contra/.test(text)) return "High";
+      if (fund.volatility != null) {
+        if (fund.volatility < .06) return "Low";
+        if (fund.volatility < .14) return "Moderate";
+        if (fund.volatility < .22) return "High";
+      }
+      return "Data-based";
+    }
+
+    /* ---------- SIP challenge ---------- */
+    function addSipFund(fund, limit) {
+      if (state.sipSelected.some(item => item.schemeCode === fund.schemeCode)) return;
+      if (state.sipSelected.length >= limit) {
+        showError(els.sipError, "You can compare up to 3 funds in the SIP Challenge.");
+        return;
+      }
+      showError(els.sipError, "");
+      state.sipSelected.push(fund);
+      renderSelected(els.sipSelected, state.sipSelected, removeSipFund);
+    }
+
+    function removeSipFund(code) {
+      state.sipSelected = state.sipSelected.filter(fund => fund.schemeCode !== code);
+      renderSelected(els.sipSelected, state.sipSelected, removeSipFund);
+    }
+
+    async function runSipChallenge() {
+      showError(els.sipError, "");
+      if (!state.sipSelected.length) {
+        showError(els.sipError, "Select at least one fund.");
+        return;
+      }
+      setStatus(els.sipStatus, true);
+      els.runSipBtn.disabled = true;
+      try {
+        const amount = readMoney(els.sipAmount.value) || 10000;
+        const years = Number(els.sipYears.value);
+        const results = [];
+        for (const fund of state.sipSelected) {
+          const detail = await getFundDetails(fund.schemeCode);
+          if (detail.history.length < 250) throw new Error(`${cleanName(fund.schemeName)} has insufficient NAV history.`);
+          const analysis = analyseFund(fund, detail);
+          const simulation = simulateSip(analysis, amount, years);
+          results.push({ ...analysis, simulation });
+        }
+        renderSipResults(results, amount, years);
+      } catch (error) {
+        showError(els.sipError, error.message || "Could not complete SIP simulation.");
+      } finally {
+        setStatus(els.sipStatus, false);
+        els.runSipBtn.disabled = false;
+      }
+    }
+
+    function simulateSip(fund, amount, years) {
+      const latest = fund.latest;
+      const start = addYears(latest.date, -years);
+      const months = [];
+      let cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+      const endMonth = new Date(latest.date.getFullYear(), latest.date.getMonth(), 1);
+      while (cursor <= endMonth) {
+        months.push(new Date(cursor));
+        cursor.setMonth(cursor.getMonth() + 1);
+      }
+      let units = 0;
+      const cashflows = [];
+      const path = [];
+      for (const date of months) {
+        const navPoint = closestNav(fund.history, date);
+        if (!navPoint || navPoint.date < fund.history[0].date) continue;
+        const bought = amount / navPoint.nav;
+        units += bought;
+        cashflows.push({ amount: -amount, date: navPoint.date });
+        path.push({ date: navPoint.date, value: units * navPoint.nav });
+      }
+      const currentValue = units * latest.nav;
+      cashflows.push({ amount: currentValue, date: latest.date });
+      const totalInvested = cashflows.filter(c => c.amount < 0).reduce((sum, c) => sum - c.amount, 0);
+      return {
+        totalInvested,
+        currentValue,
+        profit: currentValue - totalInvested,
+        xirr: xirr(cashflows),
+        units,
+        instalments: cashflows.length - 1,
+        path
+      };
+    }
+
+    function renderSipResults(results, amount, years) {
+      const winner = results.slice().sort((a, b) => b.simulation.currentValue - a.simulation.currentValue)[0];
+      els.sipResults.innerHTML = `
+        <h3 class="step-title">${escapeHTML(INR.format(amount))}/month for ${years} years</h3>
+        <p class="section-copy" style="margin-bottom:16px">Winner: <strong>${escapeHTML(cleanName(winner.name))}</strong> based on highest current historical SIP value.</p>
+        <div class="chart-wrap">${renderBarChart(results, r => r.simulation.currentValue, "Current value")}</div>
+        <div class="results-grid" style="grid-template-columns:repeat(${Math.min(results.length, 3)}, minmax(0, 1fr)); margin-top:16px">
+          ${results.map(r => `
+            <article class="fund-card ${r.code === winner.code ? "best" : ""}">
+              <h3 class="fund-name">${escapeHTML(cleanName(r.name))}</h3>
+              <div class="metrics">
+                <div class="metric"><small>Total invested</small><strong>${escapeHTML(INR.format(r.simulation.totalInvested))}</strong></div>
+                <div class="metric"><small>Current value</small><strong>${escapeHTML(INR.format(r.simulation.currentValue))}</strong></div>
+                <div class="metric"><small>Profit</small><strong>${escapeHTML(INR.format(r.simulation.profit))}</strong></div>
+                <div class="metric"><small>XIRR</small><strong>${escapeHTML(formatPercent(r.simulation.xirr))}</strong></div>
+              </div>
+              <div class="meta-line">${r.simulation.instalments} monthly purchases reconstructed using closest available NAV dates.</div>
+            </article>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    /* ---------- Compare funds ---------- */
+    function addCompareFund(fund, limit) {
+      if (state.compareSelected.some(item => item.schemeCode === fund.schemeCode)) return;
+      if (state.compareSelected.length >= limit) {
+        showError(els.compareError, "You can compare up to 4 funds.");
+        return;
+      }
+      showError(els.compareError, "");
+      state.compareSelected.push(fund);
+      renderSelected(els.compareSelected, state.compareSelected, removeCompareFund);
+    }
+
+    function removeCompareFund(code) {
+      state.compareSelected = state.compareSelected.filter(fund => fund.schemeCode !== code);
+      renderSelected(els.compareSelected, state.compareSelected, removeCompareFund);
+    }
+
+    async function runCompare() {
+      showError(els.compareError, "");
+      if (state.compareSelected.length < 2) {
+        showError(els.compareError, "Add at least 2 funds to compare.");
+        return;
+      }
+      setStatus(els.compareStatus, true);
+      els.runCompareBtn.disabled = true;
+      try {
+        const results = [];
+        for (const fund of state.compareSelected) {
+          const detail = await getFundDetails(fund.schemeCode);
+          if (detail.history.length < 250) throw new Error(`${cleanName(fund.schemeName)} has insufficient NAV history.`);
+          const analysis = analyseFund(fund, detail);
+          analysis.simulation = simulateSip(analysis, 10000, 5);
+          results.push(analysis);
+        }
+        renderCompareResults(results);
+      } catch (error) {
+        showError(els.compareError, error.message || "Could not compare the selected funds.");
+      } finally {
+        setStatus(els.compareStatus, false);
+        els.runCompareBtn.disabled = false;
+      }
+    }
+
+    function renderCompareResults(results) {
+      const best = {
+        y1: maxCode(results, r => r.returns.y1),
+        y3: maxCode(results, r => r.returns.y3),
+        y5: maxCode(results, r => r.returns.y5),
+        y10: maxCode(results, r => r.returns.y10),
+        vol: minCode(results, r => r.volatility),
+        drawdown: maxCode(results, r => r.maxDrawdown),
+        score: maxCode(results, r => r.score),
+        sip: maxCode(results, r => r.simulation.currentValue),
+        consistency: maxCode(results, r => r.consistency)
+      };
+      const overall = results.find(r => r.code === best.score);
+      const consistent = results.find(r => r.code === best.consistency);
+      const lowVol = results.find(r => r.code === best.vol);
+      const sipWinner = results.find(r => r.code === best.sip);
+      els.compareResults.innerHTML = `
+        <div class="panel">
+          <div class="cards-grid" style="margin-bottom:16px">
+            <div class="choice selected"><span class="icon">🏆</span><strong>Best overall score</strong><span>${escapeHTML(cleanName(overall.name))}</span></div>
+            <div class="choice"><span class="icon">🧭</span><strong>Most consistent</strong><span>${escapeHTML(cleanName(consistent.name))}</span></div>
+            <div class="choice"><span class="icon">🛡</span><strong>Lowest volatility</strong><span>${escapeHTML(cleanName(lowVol.name))}</span></div>
+            <div class="choice"><span class="icon">💰</span><strong>Best SIP outcome</strong><span>${escapeHTML(cleanName(sipWinner.name))}</span></div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fund</th><th>1Y</th><th>3Y CAGR</th><th>5Y CAGR</th><th>10Y CAGR</th><th>Volatility</th><th>Max drawdown</th><th>Score</th><th>5Y ₹10k SIP</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${results.map(r => `
+                  <tr>
+                    <td><strong>${escapeHTML(cleanName(r.name))}</strong><div class="meta-line">${escapeHTML(metaLabel(r))}</div></td>
+                    <td class="${r.code === best.y1 ? "best-cell" : ""}">${escapeHTML(formatPercent(r.returns.y1))}</td>
+                    <td class="${r.code === best.y3 ? "best-cell" : ""}">${escapeHTML(formatPercent(r.returns.y3))}</td>
+                    <td class="${r.code === best.y5 ? "best-cell" : ""}">${escapeHTML(formatPercent(r.returns.y5))}</td>
+                    <td class="${r.code === best.y10 ? "best-cell" : ""}">${escapeHTML(formatPercent(r.returns.y10))}</td>
+                    <td class="${r.code === best.vol ? "best-cell" : ""}">${escapeHTML(formatPercent(r.volatility))}</td>
+                    <td class="${r.code === best.drawdown ? "best-cell" : ""}">${escapeHTML(formatPercent(r.maxDrawdown))}</td>
+                    <td class="${r.code === best.score ? "best-cell" : ""}">${r.score}/100</td>
+                    <td class="${r.code === best.sip ? "best-cell" : ""}">${escapeHTML(INR.format(r.simulation.currentValue))}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+          <div class="notice">Comparison metrics are historical calculations from NAV data. They are not recommendations to buy, sell, or hold.</div>
+        </div>
+      `;
+    }
+
+    /* ---------- Charts and utilities ---------- */
+    function renderBarChart(results, valueFn, label) {
+      const max = Math.max(...results.map(valueFn), 1);
+      return `
+        <div class="bar-chart" aria-label="${escapeAttr(label)} chart">
+          ${results.map(item => {
+            const value = valueFn(item);
+            const width = Math.max(4, Math.round(value / max * 100));
+            return `
+              <div class="bar-row">
+                <strong title="${escapeAttr(item.name)}">${escapeHTML(shortName(item.name))}</strong>
+                <div class="bar-track"><div class="bar-fill" style="width:${width}%"></div></div>
+                <span>${escapeHTML(INR.format(value))}</span>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
+    }
+
+    function xirr(cashflows) {
+      if (cashflows.length < 2) return null;
+      const first = cashflows[0].date;
+      const npv = rate => cashflows.reduce((sum, flow) => {
+        const years = (flow.date - first) / (365.25 * 24 * 60 * 60 * 1000);
+        return sum + flow.amount / Math.pow(1 + rate, years);
+      }, 0);
+      let low = -0.95;
+      let high = 3;
+      let lowVal = npv(low);
+      let highVal = npv(high);
+      if (Math.sign(lowVal) === Math.sign(highVal)) return null;
+      for (let i = 0; i < 80; i++) {
+        const mid = (low + high) / 2;
+        const midVal = npv(mid);
+        if (Math.abs(midVal) < .01) return mid;
+        if (Math.sign(midVal) === Math.sign(lowVal)) {
+          low = mid;
+          lowVal = midVal;
+        } else {
+          high = mid;
+          highVal = midVal;
+        }
+      }
+      return (low + high) / 2;
+    }
+
+    function closestNav(history, targetDate) {
+      if (!history.length) return null;
+      let low = 0;
+      let high = history.length - 1;
+      while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+        if (history[mid].date < targetDate) low = mid + 1;
+        else high = mid - 1;
+      }
+      const before = history[Math.max(0, high)];
+      const after = history[Math.min(history.length - 1, low)];
+      if (!before) return after;
+      if (!after) return before;
+      return Math.abs(before.date - targetDate) <= Math.abs(after.date - targetDate) ? before : after;
+    }
+
+    function parseMFDate(value) {
+      if (!value) return null;
+      const parts = String(value).split("-");
+      if (parts.length !== 3) return null;
+      const [day, month, year] = parts.map(Number);
+      return new Date(year, month - 1, day);
+    }
+
+    function addYears(date, years) {
+      const copy = new Date(date);
+      copy.setFullYear(copy.getFullYear() + years);
+      return copy;
+    }
+
+    function maxCode(items, valueFn) {
+      return items.reduce((best, item) => {
+        const value = valueFn(item);
+        if (value == null || Number.isNaN(value)) return best;
+        if (!best || value > best.value) return { code: item.code, value };
+        return best;
+      }, null)?.code;
+    }
+
+    function minCode(items, valueFn) {
+      return items.reduce((best, item) => {
+        const value = valueFn(item);
+        if (value == null || Number.isNaN(value)) return best;
+        if (!best || value < best.value) return { code: item.code, value };
+        return best;
+      }, null)?.code;
+    }
+
+    function scale(value, min, max) {
+      if (value == null || Number.isNaN(value)) return .35;
+      return clamp((value - min) / (max - min), 0, 1);
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function firstNumber(...values) {
+      return values.find(value => value != null && !Number.isNaN(value)) ?? null;
+    }
+
+    function readMoney(value) {
+      return Number(String(value).replace(/[^\d.]/g, ""));
+    }
+
+    function debounce(fn, wait) {
+      let timer;
+      return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn(...args), wait);
+      };
+    }
+
+    function cleanName(name) {
+      return String(name || "Unnamed fund").replace(/\s+/g, " ").trim();
+    }
+
+    function metaLabel(fund) {
+      const parts = [fund.category, fund.type].filter(Boolean);
+      return parts.length ? parts.join(" • ") : "Category/type unavailable";
+    }
+
+    function shortName(name) {
+      const clean = cleanName(name)
+        .replace(/\b(Direct|Growth|Plan|Option|Mutual Fund|Fund)\b/gi, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      return clean.length > 32 ? clean.slice(0, 29) + "..." : clean;
+    }
+
+    function formatDate(date) {
+      if (!(date instanceof Date)) return "Unavailable";
+      return date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    }
+
+    function formatNav(nav) {
+      if (nav == null || Number.isNaN(nav)) return "Unavailable";
+      return "₹" + Number(nav).toFixed(4);
+    }
+
+    function formatPercent(value) {
+      if (value == null || Number.isNaN(value)) return "Insufficient data";
+      return PCT.format(value);
+    }
+
+    function escapeHTML(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[char]);
+    }
+
+    function escapeAttr(value) {
+      return escapeHTML(value).replace(/`/g, "&#96;");
+    }
+  </script>
+</body>
+</html>
