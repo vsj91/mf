@@ -1884,6 +1884,11 @@
       setStatus(els.findStatus, isLoading);
     }
 
+    function scrollToResults(target) {
+      if (!target) return;
+      setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+    }
+
     function showError(el, message) {
       el.innerHTML = message ? `<div class="error">${escapeHTML(message)}</div>` : "";
     }
@@ -2854,6 +2859,7 @@
           </section>
         </div>
       `;
+      scrollToResults(els.loanResults);
       loadLoanFundSuggestions(input, plan);
     }
 
@@ -3029,6 +3035,7 @@
           </section>
         </div>
       `;
+      scrollToResults(els.freedomResults);
       loadFreedomFundSuggestions(title, input, result);
     }
 
