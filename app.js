@@ -321,7 +321,7 @@ function setStatus(el, show) {
 }
 
 function setFindLoading(isLoading) {
-  const label = isLoading ? `<span class="spinner" aria-hidden="true"></span><span>Finding funds...</span>` : "Find My Funds";
+  const label = isLoading ? `<span class="spinner" aria-hidden="true"></span><span>Finding funds...</span>` : "Study Funds";
   [els.findFundsBtn, els.findFundsMobileBtn].forEach(button => {
     button.disabled = isLoading;
     button.innerHTML = label;
@@ -883,7 +883,7 @@ function renderFundCard(fund, profile, best) {
           <h3 class="fund-name">${escapeHTML(cleanName(fund.name))}</h3>
           <div class="meta-line">${escapeHTML(metaLabel(fund))}</div>
           <div class="quick-label">
-            ${best ? `<span class="pill">Closest filter match</span>` : ""}
+            ${best ? `<span class="pill">Closest study match</span>` : ""}
             <span class="pill">Risk: ${escapeHTML(riskLabel(fund))}</span>
           </div>
         </div>
@@ -1207,7 +1207,7 @@ function renderSipResults(results, amount, years) {
   const winner = results.slice().sort((a, b) => b.simulation.currentValue - a.simulation.currentValue)[0];
   els.sipResults.innerHTML = `
     <h3 class="step-title">${escapeHTML(INR.format(amount))}/month for ${years} years</h3>
-    <p class="section-copy" style="margin-bottom:16px">Winner: <strong>${escapeHTML(cleanName(winner.name))}</strong> based on highest current historical SIP value.</p>
+    <p class="section-copy" style="margin-bottom:16px">Top historical value: <strong>${escapeHTML(cleanName(winner.name))}</strong> based on highest current historical SIP value.</p>
     <div class="chart-wrap">${renderBarChart(results, r => r.simulation.currentValue, "Current value")}</div>
     <div class="results-grid" style="grid-template-columns:repeat(${Math.min(results.length, 3)}, minmax(0, 1fr)); margin-top:16px">
       ${results.map(r => `
@@ -1288,10 +1288,10 @@ function renderCompareResults(results) {
   els.compareResults.innerHTML = `
     <div class="panel">
       <div class="cards-grid" style="margin-bottom:16px">
-        <div class="choice selected"><span class="icon">🏆</span><strong>Best overall score</strong><span>${escapeHTML(cleanName(overall.name))}</span></div>
+        <div class="choice selected"><span class="icon">🏆</span><strong>Highest overall score</strong><span>${escapeHTML(cleanName(overall.name))}</span></div>
         <div class="choice"><span class="icon">🧭</span><strong>Most consistent</strong><span>${escapeHTML(cleanName(consistent.name))}</span></div>
         <div class="choice"><span class="icon">🛡</span><strong>Lowest volatility</strong><span>${escapeHTML(cleanName(lowVol.name))}</span></div>
-        <div class="choice"><span class="icon">💰</span><strong>Best SIP outcome</strong><span>${escapeHTML(cleanName(sipWinner.name))}</span></div>
+        <div class="choice"><span class="icon">💰</span><strong>Top SIP outcome</strong><span>${escapeHTML(cleanName(sipWinner.name))}</span></div>
       </div>
       <div class="table-wrap">
         <table>
@@ -1812,7 +1812,7 @@ function renderMetalResults(funds) {
   els.metalResults.innerHTML = `
     <h3 class="step-title">Metal fund history</h3>
     <div class="insight" style="margin-bottom:14px">
-      <small>Closest historical score</small>
+      <small>Highest historical score</small>
       <strong>${escapeHTML(cleanName(best.name))}</strong>
     </div>
     <div class="results-grid" style="grid-template-columns:1fr; margin-top:0">
