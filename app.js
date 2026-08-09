@@ -630,7 +630,8 @@ function returnPreferenceScore(fund, preference) {
 
 function renderRecommendations(funds, profile, amount) {
   const goal = goals.find(g => g.id === profile.goal);
-  state.lastRecommendations = funds;
+  const displayFunds = selectedStudyFunds(funds, amount);
+  state.lastRecommendations = displayFunds;
   els.recommendationResults.innerHTML = `
     <div class="section-head" style="margin-top:24px">
       <div>
@@ -639,14 +640,14 @@ function renderRecommendations(funds, profile, amount) {
       </div>
     </div>
     <div class="notice">Based on your selected goal, time horizon, risk level, and return preference, here are funds whose category and historical NAV behavior match your filters. This is not investment advice and does not predict future returns.</div>
-    ${renderStudyMix(funds, amount)}
-    ${renderPeriodComparison(funds)}
+    ${renderStudyMix(displayFunds, amount)}
+    ${renderPeriodComparison(displayFunds)}
     <section class="period-panel" id="mostInvestedFunds" aria-label="Most invested funds to study">
       <h3 class="mix-title">Most invested funds to study</h3>
-      <div class="meta-line">Loading broad-category funds from MFapi...</div>
+      <div class="meta-line">Separate learning list from broad MFapi category searches. Loading...</div>
     </section>
     <div class="results-grid">
-      ${funds.map((fund, index) => renderFundCard(fund, profile, index === 0)).join("")}
+      ${displayFunds.map((fund, index) => renderFundCard(fund, profile, index === 0)).join("")}
     </div>
     <div class="notice">Past performance does not guarantee future returns. The Fund Score is an analytical score, not investment advice.</div>
   `;
@@ -663,8 +664,12 @@ function renderRecommendations(funds, profile, amount) {
   els.recommendationResults.querySelectorAll("[data-fund-chart-period]").forEach(button => {
     button.addEventListener("click", () => updateFundChart(button));
   });
-  loadMostInvestedStudyFunds(funds.map(fund => fund.code));
+  loadMostInvestedStudyFunds(displayFunds.map(fund => fund.code));
   els.recommendationResults.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function selectedStudyFunds(funds, amount) {
+  return funds.slice(0, suggestedFundCount(amount, funds.length));
 }
 
 async function loadMostInvestedStudyFunds(excludeCodes) {
@@ -835,10 +840,8 @@ function renderStudyMix(funds, amount) {
 }
 
 function studyMixWeights(funds, amount) {
-  const count = suggestedFundCount(amount, funds.length);
-  const selectedFunds = funds.slice(0, count);
-  if (count === 1) return [{ fund: selectedFunds[0], percent: 100 }];
-  const raw = selectedFunds.map(fund => ({
+  if (funds.length === 1) return [{ fund: funds[0], percent: 100 }];
+  const raw = funds.map(fund => ({
     fund,
     weight: Math.max(12, fund.score + (fund.profileFit || 0) - riskPenaltyForMix(fund))
   }));
