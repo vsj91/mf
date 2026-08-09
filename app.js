@@ -1833,7 +1833,23 @@ function renderMetalResults(funds) {
         </article>
       `).join("")}
     </div>
-    <div class="table-wrap" style="margin-top:14px">
+    <div class="mobile-fund-list" style="margin-top:14px">
+      ${funds.map((fund, index) => `
+        <article class="mobile-fund-row ${index === 0 ? "best" : ""}">
+          <strong>${escapeHTML(cleanName(fund.name))}</strong>
+          <div class="meta-line">${escapeHTML(metaLabel(fund))}</div>
+          <div class="mobile-metrics">
+            <div class="metric"><small>1M</small><strong>${escapeHTML(formatPercent(fund.periodReturns?.m1))}</strong></div>
+            <div class="metric"><small>6M</small><strong>${escapeHTML(formatPercent(fund.periodReturns?.m6))}</strong></div>
+            <div class="metric"><small>1Y</small><strong>${escapeHTML(formatPercent(fund.periodReturns?.y1))}</strong></div>
+            <div class="metric"><small>3Y</small><strong>${escapeHTML(formatPercent(fund.periodReturns?.y3))}</strong></div>
+            <div class="metric"><small>Score</small><strong>${fund.score}/100</strong></div>
+            <div class="metric"><small>NAV</small><strong>${escapeHTML(formatNav(fund.latest?.nav))}</strong></div>
+          </div>
+        </article>
+      `).join("")}
+    </div>
+    <div class="table-wrap metal-table" style="margin-top:14px">
       <table>
         <thead><tr><th>Fund</th><th>1M</th><th>6M</th><th>1Y</th><th>3Y CAGR</th><th>Score</th></tr></thead>
         <tbody>
