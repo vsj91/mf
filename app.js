@@ -78,6 +78,7 @@ function cacheEls() {
   [
     "goalSelect", "durationChoices", "riskChoices", "returnChoices", "monthlyAmount", "monthlySlider", "monthlyPretty",
     "languageSelect", "findFundsBtn", "findFundsMobileBtn", "findStatus", "findError", "recommendationResults",
+    "sipCalcAmount", "sipCalcYears", "sipCalcReturn", "sipCalcStepUp", "runSipCalcBtn", "sipCalcError", "sipCalcResults",
     "sipSearch", "sipSearchResults", "sipSearchStatus", "sipSelected", "sipAmount", "sipYears",
     "runSipBtn", "sipStatus", "sipError", "sipResults", "compareSearch", "compareSearchResults",
     "compareSearchStatus", "compareSelected", "runCompareBtn", "compareStatus", "compareError", "compareResults",
@@ -291,6 +292,7 @@ function wireInputs() {
   });
   els.findFundsBtn.addEventListener("click", findFunds);
   els.findFundsMobileBtn.addEventListener("click", findFunds);
+  els.runSipCalcBtn.addEventListener("click", runSipCalculator);
   els.runSipBtn.addEventListener("click", runSipChallenge);
   els.runCompareBtn.addEventListener("click", runCompare);
   els.runLoanBtn.addEventListener("click", runLoanPlanner);
@@ -299,6 +301,7 @@ function wireInputs() {
   els.runCorpusBtn.addEventListener("click", runCorpusCalculator);
   els.runMetalsBtn.addEventListener("click", runMetalTracker);
   els.runPopularBtn.addEventListener("click", () => loadMostInvestedStudyFunds());
+  runSipCalculator(false);
 }
 
 function updateAmountUI() {
@@ -1126,11 +1129,82 @@ function riskLabel(fund) {
   return "Data-based";
 }
 
+/* ---------- Simple SIP calculator ---------- */
+function runSipCalculator(shouldScroll = true) {
+  showError(els.sipCalcError, "");
+  try {
+    const input = {
+      sip: readMoney(els.sipCalcAmount.value),
+      years: Number(String(els.sipCalcYears.value).replace(/[^\d.]/g, "")),
+      rate: Number(els.sipCalcReturn.value),
+      stepUp: Number(els.sipCalcStepUp.value)
+    };
+    validateSipCalcInput(input);
+    renderSipCalculatorResults(input, calculateSipProjection(input), shouldScroll);
+  } catch (error) {
+    showError(els.sipCalcError, error.message || "Could not calculate SIP.");
+  }
+}
+
+function validateSipCalcInput(input) {
+  if (!input.sip || input.sip < 100) throw new Error("Enter a valid monthly SIP.");
+  if (!input.years || input.years <= 0 || input.years > 60) throw new Error("Enter investment years between 1 and 60.");
+  if (!input.rate || input.rate <= 0 || input.rate > 40) throw new Error("Choose a realistic assumed return.");
+  if (input.stepUp < 0 || input.stepUp > 50) throw new Error("Choose a valid yearly SIP step-up.");
+}
+
+function calculateSipProjection(input) {
+  const months = Math.round(input.years * 12);
+  const monthlyRate = input.rate / 100 / 12;
+  let sip = input.sip;
+  let value = 0;
+  let invested = 0;
+  const yearly = [];
+  for (let month = 1; month <= months; month++) {
+    value = value * (1 + monthlyRate) + sip;
+    invested += sip;
+    if (month % 12 === 0 || month === months) {
+      yearly.push({ name: `Year ${Math.ceil(month / 12)}`, value, invested });
+    }
+    if (month % 12 === 0 && month < months) sip *= 1 + input.stepUp / 100;
+  }
+  return { months, value, invested, gain: value - invested, yearly };
+}
+
+function renderSipCalculatorResults(input, result, shouldScroll = true) {
+  const gainPercent = result.invested ? Math.round(clamp(result.gain / result.invested * 100, 0, 999)) : 0;
+  els.sipCalcResults.innerHTML = `
+    <div class="goal-result">
+      <div class="goal-hero">
+        <small>Estimated SIP value</small>
+        <strong>${escapeHTML(INR.format(result.value))}</strong>
+        <span>${escapeHTML(INR.format(input.sip))}/month for ${escapeHTML(monthsLabel(result.months))} at an assumed ${escapeHTML(input.rate)}% annual return${input.stepUp ? ` with ${escapeHTML(input.stepUp)}% yearly step-up` : ""}.</span>
+      </div>
+      <div class="savings-circle-wrap">
+        <div class="goal-circle" style="--goal:${clamp(gainPercent, 0, 100)}"><span>${gainPercent}%<br>gain</span></div>
+        <div class="savings-copy">
+          <strong>${escapeHTML(INR.format(result.gain))} estimated growth</strong>
+          <p>This is a planning estimate from your inputs. Real market returns can be higher or lower.</p>
+        </div>
+      </div>
+      <div class="insight-grid">
+        <div class="insight"><small>Total invested</small><strong>${escapeHTML(INR.format(result.invested))}</strong></div>
+        <div class="insight"><small>Estimated value</small><strong>${escapeHTML(INR.format(result.value))}</strong></div>
+        <div class="insight"><small>Estimated gain</small><strong>${escapeHTML(INR.format(result.gain))}</strong></div>
+        <div class="insight"><small>Assumed return</small><strong>${escapeHTML(input.rate)}%</strong></div>
+      </div>
+      <div class="chart-wrap">${renderValueChart(result.yearly.slice(-12), "SIP growth")}</div>
+      <div class="notice">This is not investment advice. Use SIP Replay to study actual historical NAV outcomes for selected mutual funds.</div>
+    </div>
+  `;
+  if (shouldScroll) scrollToResults(els.sipCalcResults);
+}
+
 /* ---------- SIP challenge ---------- */
 function addSipFund(fund, limit) {
   if (state.sipSelected.some(item => item.schemeCode === fund.schemeCode)) return;
   if (state.sipSelected.length >= limit) {
-    showError(els.sipError, "You can compare up to 3 funds in the SIP Challenge.");
+    showError(els.sipError, "You can compare up to 3 funds in SIP Replay.");
     return;
   }
   showError(els.sipError, "");

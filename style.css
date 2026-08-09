@@ -1344,7 +1344,8 @@ tr:last-child td { border-bottom: 0; }
 
 @media (max-width: 880px) {
   .nav { align-items: start; flex-direction: column; padding: 12px 0; gap: 12px; }
-  .tabs { width: 100%; }
+  .tabs { width: 100%; scroll-snap-type: x proximity; }
+  .tab { scroll-snap-align: start; }
   .hero { grid-template-columns: 1fr; padding-top: 24px; gap: 12px; }
   .cards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .results-grid, .learn-grid { grid-template-columns: 1fr; }
@@ -1372,9 +1373,22 @@ tr:last-child td { border-bottom: 0; }
 
 @media (max-width: 520px) {
   .shell { width: min(100% - 20px, 1160px); }
+  .topbar { position: sticky; }
+  .nav {
+    min-height: 0;
+    gap: 8px;
+    padding: 8px 0;
+    display: grid;
+    grid-template-columns: 1fr auto;
+  }
+  .brand { grid-column: 1; grid-row: 1; }
+  .tabs { grid-column: 1 / -1; grid-row: 2; }
+  .language-wrap { grid-column: 2; grid-row: 1; justify-self: end; }
+  .language-select { min-height: 36px; max-width: 132px; padding-left: 10px; font-size: 12px; }
   .brand-mark { width: 32px; height: 32px; border-radius: 10px; }
   .brand { font-size: 15px; }
-  .tab { padding: 9px 12px; font-size: 13px; }
+  .tabs { padding: 4px; gap: 4px; }
+  .tab { padding: 8px 10px; font-size: 12px; }
   .hero { display: none; }
   .seo-strip { grid-template-columns: 1fr; margin-top: 14px; }
   h1 { font-size: 31px; margin: 4px 0 8px; line-height: 1.05; }
@@ -1394,6 +1408,8 @@ tr:last-child td { border-bottom: 0; }
   .btn { min-height: 50px; }
   .mini-row { grid-template-columns: 40px 1fr; }
   .mini-row .pill { grid-column: 2; width: fit-content; }
+  .chart-wrap { padding: 12px; border-radius: 20px; }
+  .bar-chart { min-width: 0; }
   .bar-row { grid-template-columns: 1fr; gap: 6px; }
   .return-row { grid-template-columns: 1fr; gap: 6px; }
   .chip span { max-width: 220px; }
@@ -1446,7 +1462,9 @@ tr:last-child td { border-bottom: 0; }
   .mix-donut { width: 132px; height: 132px; }
   .mix-donut::after { width: 78px; height: 78px; font-size: 12px; }
   .mix-title { font-size: 18px; }
-  .insight-grid { grid-template-columns: 1fr; }
+  .insight-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .insight { min-width: 0; padding: 10px; }
+  .insight strong { font-size: 14px; overflow-wrap: anywhere; }
   .savings-circle-wrap { grid-template-columns: 1fr; text-align: center; }
   .goal-hero { padding: 16px; border-radius: 22px; }
   .freedom-hero { padding: 16px; border-radius: 22px; }

@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PlanSIP - Mutual Fund Finder, SIP Calculator and Loan Freedom Planner India</title>
-  <meta name="description" content="PlanSIP helps Indian investors study mutual funds, SIP outcomes, loan freedom, first crore goals, corpus planning, and gold/silver fund returns using live MFapi NAV history.">
+  <title>PlanSIP - SIP Calculator India, Mutual Fund Finder and Loan Freedom Planner</title>
+  <meta name="description" content="Free SIP calculator for India with mutual fund finder, historical SIP replay, loan freedom, first crore, corpus, and gold/silver fund tools using live MFapi NAV history.">
   <meta name="keywords" content="SIP calculator India, mutual fund finder India, MFapi mutual fund, loan prepayment SIP calculator, first crore calculator, financial freedom calculator, gold mutual fund tracker, silver mutual fund tracker, mutual fund comparison India">
   <meta name="author" content="PlanSIP">
   <meta name="robots" content="index, follow, max-image-preview:large">
@@ -41,6 +41,7 @@
       "inLanguage": "en-IN",
       "description": "PlanSIP is an educational mutual fund discovery and SIP planning app for India using live MFapi NAV history.",
       "featureList": [
+        "Simple SIP calculator with yearly step-up planning",
         "Mutual fund shortlisting by goal, duration, risk, and return preference",
         "Historical SIP simulation",
         "Loan freedom calculator",
@@ -108,7 +109,7 @@
   <link rel="preconnect" href="https://api.mfapi.in">
   <link rel="preconnect" href="https://www.googletagmanager.com">
   <link rel="preconnect" href="https://translate.google.com">
-  <link rel="stylesheet" href="style.css?v=20260809-perf7">
+  <link rel="stylesheet" href="style.css?v=20260809-ux1">
 </head>
 <body>
   <header class="topbar">
@@ -119,13 +120,14 @@
       </div>
       <nav class="tabs" aria-label="Primary navigation">
         <button class="tab active" data-tab="find">Find Funds</button>
+        <button class="tab" data-tab="sipcalc">SIP Calculator</button>
         <button class="tab" data-tab="loan">Loan Freedom</button>
         <button class="tab" data-tab="freedom">Freedom Goals</button>
         <button class="tab" data-tab="corpus">Corpus</button>
         <button class="tab" data-tab="metals">Gold/Silver</button>
-        <button class="tab" data-tab="sip">SIP Challenge</button>
+        <button class="tab" data-tab="sip">SIP Replay</button>
         <button class="tab" data-tab="compare">Compare</button>
-        <button class="tab" data-tab="popular">Popular Funds</button>
+        <button class="tab" data-tab="popular">Popular</button>
         <button class="tab" data-tab="learn">Learn</button>
       </nav>
       <div class="language-wrap" aria-label="Language selector">
@@ -145,7 +147,7 @@
         <p>Goal + Time + Risk → smarter fund shortlisting, SIP planning, corpus tracking, and loan freedom study.</p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="#find">Start finding funds</a>
-          <a class="btn btn-secondary" href="#sip">Try ₹10,000 SIP Challenge</a>
+          <a class="btn btn-secondary" href="#sipcalc">Use SIP Calculator</a>
         </div>
         <div class="notice">
           This tool is for educational and analytical purposes only. Mutual fund investments are subject to market risks. Historical returns do not guarantee future performance. Consider consulting a SEBI-registered investment adviser before investing.
@@ -231,10 +233,62 @@
       <div id="recommendationResults"></div>
     </section>
 
+    <section id="sipcalc" class="section" aria-labelledby="sipcalc-title">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="sipcalc-title">SIP Calculator</h2>
+          <p class="section-copy">Estimate monthly SIP growth with simple assumptions. For real historical fund replay, use SIP Replay.</p>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="panel wizard">
+          <div class="form-row">
+            <div>
+              <label for="sipCalcAmount">Monthly SIP</label>
+              <input class="input" id="sipCalcAmount" inputmode="numeric" value="10000">
+            </div>
+            <div>
+              <label for="sipCalcYears">Investment years</label>
+              <input class="input" id="sipCalcYears" inputmode="decimal" value="10">
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label for="sipCalcReturn">Expected annual return (%)</label>
+              <select class="input" id="sipCalcReturn">
+                <option value="8">Conservative 8%</option>
+                <option value="10">Balanced 10%</option>
+                <option value="12" selected>Growth 12%</option>
+                <option value="15">High growth 15%</option>
+              </select>
+            </div>
+            <div>
+              <label for="sipCalcStepUp">Yearly SIP step-up</label>
+              <select class="input" id="sipCalcStepUp">
+                <option value="0" selected>No step-up</option>
+                <option value="5">5% yearly</option>
+                <option value="10">10% yearly</option>
+                <option value="15">15% yearly</option>
+              </select>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary" id="runSipCalcBtn">Calculate SIP</button>
+            <a class="btn btn-secondary" href="#sip">Replay with real funds</a>
+          </div>
+          <div id="sipCalcError"></div>
+          <div class="notice">This calculator uses assumed returns. It is not a guarantee, prediction, or investment advice.</div>
+        </div>
+        <div id="sipCalcResults" class="panel">
+          <div class="empty">Enter your monthly SIP, years, and expected return to estimate a future value.</div>
+        </div>
+      </div>
+    </section>
+
     <section id="sip" class="section" aria-labelledby="sip-title">
       <div class="section-head">
         <div>
-          <h2 class="section-title" id="sip-title">₹10,000 SIP Challenge</h2>
+          <h2 class="section-title" id="sip-title">SIP Replay</h2>
           <p class="section-copy">Pick up to three funds and replay a historical monthly SIP using actual NAV dates.</p>
         </div>
       </div>
@@ -266,7 +320,7 @@
           </div>
           <div class="actions" style="margin-top:16px">
             <div class="status" id="sipStatus"><span class="spinner"></span><span>Simulating SIPs...</span></div>
-            <button class="btn btn-primary" id="runSipBtn">Run SIP Challenge</button>
+            <button class="btn btn-primary" id="runSipBtn">Run SIP Replay</button>
           </div>
           <div id="sipError"></div>
         </div>
@@ -775,6 +829,6 @@
     <p>PlanSIP is an educational finance tool. It does not provide investment advice or recommend buying, selling, or holding any mutual fund.</p>
   </footer>
 
-  <script defer src="app.js?v=20260809-perf7"></script>
+  <script defer src="app.js?v=20260809-ux1"></script>
 </body>
 </html>
