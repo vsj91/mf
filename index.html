@@ -1858,6 +1858,7 @@
         return;
       }
       sessionStorage.removeItem("ffi_resetting_english");
+      sessionStorage.removeItem("ffi_english_reset_done");
       const combo = document.querySelector(".goog-te-combo");
       if (!combo) return;
       combo.value = code;
@@ -1869,13 +1870,16 @@
       const wasTranslated = hasTranslateCookie() || document.querySelector(".translated-ltr, .translated-rtl");
       clearTranslateCookie();
       document.documentElement.lang = "en";
+      if (sessionStorage.getItem("ffi_english_reset_done") === "1") return;
       const alreadyResetting = sessionStorage.getItem("ffi_resetting_english") === "1";
       if (alreadyResetting) {
         sessionStorage.removeItem("ffi_resetting_english");
+        sessionStorage.setItem("ffi_english_reset_done", "1");
         return;
       }
       if (wasTranslated) {
         sessionStorage.setItem("ffi_resetting_english", "1");
+        sessionStorage.setItem("ffi_english_reset_done", "1");
         window.location.reload();
       }
     }
