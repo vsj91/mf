@@ -1862,10 +1862,10 @@
           }
         }))).filter(Boolean);
         const results = analysed
-          .filter(fund => fund.latest)
+          .filter(fund => fund.latest && isRecentNav(fund.latest.date))
           .sort((a, b) => b.finalRank - a.finalRank)
           .slice(0, 3);
-        if (!results.length) throw new Error("MFapi returned insufficient NAV history for the shortlisted funds. Try a different risk or duration.");
+        if (!results.length) throw new Error("MFapi returned insufficient recent NAV history for the shortlisted funds. Try a different risk or duration.");
         renderRecommendations(results, profile, amount);
       } catch (error) {
         showError(els.findError, error.message || "Something went wrong while finding funds.");
@@ -2016,6 +2016,7 @@
             return null;
           }
         }))).filter(Boolean)
+          .filter(fund => fund.latest && isRecentNav(fund.latest.date))
           .sort((a, b) => b.popularStudyRank - a.popularStudyRank)
           .slice(0, 4);
         box.innerHTML = renderMostInvestedStudyFunds(analysed);
@@ -2182,6 +2183,12 @@
     function riskPenaltyForMix(fund) {
       if (fund.volatility == null) return 0;
       return Math.round(scale(fund.volatility, 0.04, 0.28) * 12);
+    }
+
+    function isRecentNav(date) {
+      if (!(date instanceof Date)) return false;
+      const ageDays = (Date.now() - date.getTime()) / (24 * 60 * 60 * 1000);
+      return ageDays <= 180;
     }
 
     function renderFundCard(fund, profile, best) {
@@ -2771,7 +2778,7 @@
         }))).filter(Boolean);
         const count = suggestedFundCount(input.sip, analysed.length);
         const funds = analysed
-          .filter(fund => fund.latest)
+          .filter(fund => fund.latest && isRecentNav(fund.latest.date))
           .sort((a, b) => b.finalRank - a.finalRank)
           .slice(0, count);
         if (!funds.length) throw new Error("MFapi did not return enough NAV history for this goal profile.");
