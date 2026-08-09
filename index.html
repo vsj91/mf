@@ -101,6 +101,38 @@
       background: var(--brand);
       box-shadow: 0 10px 24px rgba(8, 107, 88, .18);
     }
+    .language-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .language-select {
+      min-height: 42px;
+      max-width: 178px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0 34px 0 13px;
+      color: var(--ink);
+      background: rgba(255, 255, 255, .78);
+      font-weight: 750;
+      outline: none;
+    }
+    #google_translate_element {
+      position: absolute;
+      left: -9999px;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+    }
+    .goog-te-banner-frame,
+    .goog-te-gadget-icon,
+    .skiptranslate iframe {
+      display: none !important;
+    }
+    body {
+      top: 0 !important;
+    }
     .hero {
       padding: 44px 0 18px;
       display: grid;
@@ -1147,8 +1179,14 @@
         <button class="tab" data-tab="compare">Compare</button>
         <button class="tab" data-tab="learn">Learn</button>
       </nav>
+      <div class="language-wrap" aria-label="Language selector">
+        <select class="language-select" id="languageSelect" aria-label="Translate app language">
+          <option value="en">English</option>
+        </select>
+      </div>
     </div>
   </header>
+  <div id="google_translate_element" aria-hidden="true"></div>
 
   <div class="shell">
     <section class="hero" aria-labelledby="hero-title">
@@ -1531,12 +1569,18 @@
       { id: "y3", label: "3Y", years: 3, title: "3Y CAGR" },
       { id: "y5", label: "5Y", years: 5, title: "5Y CAGR" }
     ];
+    const languages = [
+      ["en", "English"], ["hi", "Hindi"], ["bn", "Bengali"], ["te", "Telugu"], ["mr", "Marathi"], ["ta", "Tamil"], ["ur", "Urdu"], ["gu", "Gujarati"], ["kn", "Kannada"], ["ml", "Malayalam"], ["pa", "Punjabi"], ["or", "Odia"], ["as", "Assamese"], ["ne", "Nepali"], ["sd", "Sindhi"], ["si", "Sinhala"],
+      ["ar", "Arabic"], ["zh-CN", "Chinese Simplified"], ["zh-TW", "Chinese Traditional"], ["ja", "Japanese"], ["ko", "Korean"], ["id", "Indonesian"], ["ms", "Malay"], ["th", "Thai"], ["vi", "Vietnamese"], ["fil", "Filipino"], ["fa", "Persian"], ["tr", "Turkish"], ["he", "Hebrew"],
+      ["fr", "French"], ["de", "German"], ["es", "Spanish"], ["it", "Italian"], ["pt", "Portuguese"], ["nl", "Dutch"], ["pl", "Polish"], ["ru", "Russian"], ["uk", "Ukrainian"], ["ro", "Romanian"], ["el", "Greek"], ["sv", "Swedish"], ["da", "Danish"], ["fi", "Finnish"], ["no", "Norwegian"], ["cs", "Czech"], ["hu", "Hungarian"], ["bg", "Bulgarian"], ["hr", "Croatian"], ["sk", "Slovak"], ["sl", "Slovenian"], ["lt", "Lithuanian"], ["lv", "Latvian"], ["et", "Estonian"], ["sr", "Serbian"], ["ca", "Catalan"], ["eu", "Basque"], ["ga", "Irish"], ["cy", "Welsh"], ["is", "Icelandic"], ["mt", "Maltese"], ["sq", "Albanian"], ["mk", "Macedonian"]
+    ];
 
     const state = {
       goal: "wealth",
       duration: "5-10",
       risk: "Moderate",
       returnPref: "moderate",
+      language: localStorage.getItem("ffi_language") || "en",
       sipSelected: [],
       compareSelected: [],
       lastRecommendations: []
@@ -1548,6 +1592,7 @@
 
     function init() {
       cacheEls();
+      renderLanguageOptions();
       renderChoices();
       wireTabs();
       wireInputs();
@@ -1555,13 +1600,14 @@
       wireSearch("compareSearch", "compareSearchResults", "compareSearchStatus", addCompareFund, 4);
       updateAmountUI();
       updateFreedomFields();
+      wireLanguageSelector();
       prefetchRecommendationSearches();
     }
 
     function cacheEls() {
       [
         "goalSelect", "durationChoices", "riskChoices", "returnChoices", "monthlyAmount", "monthlySlider", "monthlyPretty",
-        "findFundsBtn", "findFundsMobileBtn", "findStatus", "findError", "recommendationResults",
+        "languageSelect", "findFundsBtn", "findFundsMobileBtn", "findStatus", "findError", "recommendationResults",
         "sipSearch", "sipSearchResults", "sipSearchStatus", "sipSelected", "sipAmount", "sipYears",
         "runSipBtn", "sipStatus", "sipError", "sipResults", "compareSearch", "compareSearchResults",
         "compareSearchStatus", "compareSelected", "runCompareBtn", "compareStatus", "compareError", "compareResults",
@@ -1573,6 +1619,49 @@
     }
 
     /* ---------- UI rendering ---------- */
+    function renderLanguageOptions() {
+      els.languageSelect.innerHTML = languages.map(([code, label]) => `
+        <option value="${escapeAttr(code)}" ${code === state.language ? "selected" : ""}>${escapeHTML(label)}</option>
+      `).join("");
+    }
+
+    function wireLanguageSelector() {
+      els.languageSelect.addEventListener("change", event => {
+        state.language = event.target.value;
+        localStorage.setItem("ffi_language", state.language);
+        applyLanguage(state.language);
+      });
+      setTimeout(() => applyLanguage(state.language), 900);
+    }
+
+    function applyLanguage(code) {
+      const combo = document.querySelector(".goog-te-combo");
+      if (!combo) return;
+      if (code === "en") {
+        clearTranslateCookie();
+        combo.value = "";
+      } else {
+        combo.value = code;
+      }
+      combo.dispatchEvent(new Event("change"));
+      document.documentElement.lang = code;
+    }
+
+    function clearTranslateCookie() {
+      ["googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/", "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=.github.io"].forEach(cookie => {
+        document.cookie = cookie;
+      });
+    }
+
+    window.googleTranslateElementInit = function googleTranslateElementInit() {
+      new google.translate.TranslateElement({
+        pageLanguage: "en",
+        includedLanguages: languages.map(([code]) => code).filter(code => code !== "en").join(","),
+        autoDisplay: false
+      }, "google_translate_element");
+      setTimeout(() => applyLanguage(state.language), 700);
+    };
+
     function renderChoices() {
       els.goalSelect.innerHTML = goals.map(goal => `
         <option value="${escapeAttr(goal.id)}" ${goal.id === state.goal ? "selected" : ""}>${goal.icon} ${escapeHTML(goal.title)}</option>
@@ -3071,5 +3160,6 @@
       return escapeHTML(value).replace(/`/g, "&#96;");
     }
   </script>
+  <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 </body>
 </html>
