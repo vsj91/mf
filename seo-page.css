@@ -103,6 +103,13 @@ h1 {
 .card ul, .card ol { margin: 10px 0 0; padding-left: 20px; }
 .notice { margin: 22px 0 42px; }
 footer { color: var(--muted); padding: 24px 0 42px; }
+.policy { display: grid; gap: 14px; margin: 18px 0 28px; }
+.policy .card { padding: 22px; }
+.policy h2 { margin: 0 0 10px; }
+.policy p { margin: 0 0 10px; color: var(--muted); line-height: 1.65; }
+.policy ul { margin: 0; padding-left: 20px; color: var(--muted); line-height: 1.65; }
+.site-links { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; }
+.site-links a { color: var(--muted); font-weight: 850; text-decoration: none; }
 @media (prefers-color-scheme: dark) {
   :root { color-scheme: dark; --bg:#000; --paper:#1c1c1e; --ink:#f5f5f7; --muted:#a1a1a6; --line:rgba(255,255,255,.13); --brand:#35d49a; --soft:rgba(53,212,154,.14); }
   body { background: radial-gradient(circle at top, rgba(53,212,154,.16), transparent 32rem), #050506; }
