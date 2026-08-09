@@ -1176,10 +1176,42 @@
       background: #fff;
       padding: 18px;
       min-height: 160px;
+      scroll-margin-top: 96px;
     }
-    .learn-card h3 { margin: 0 0 8px; }
+    .learn-card summary {
+      list-style: none;
+      cursor: pointer;
+      display: grid;
+      gap: 8px;
+    }
+    .learn-card summary::-webkit-details-marker { display: none; }
+    .learn-card h3 { margin: 0; }
     .learn-card p { margin: 0; color: var(--muted); line-height: 1.5; }
     .learn-card strong { color: var(--ink); }
+    .learn-card .learn-link {
+      display: inline-flex;
+      width: fit-content;
+      margin-top: 10px;
+      color: var(--brand);
+      font-size: 13px;
+      font-weight: 850;
+      text-decoration: none;
+    }
+    .learn-card .learn-more {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+    .learn-card .learn-more ul,
+    .learn-card .learn-more ol {
+      margin: 0;
+      padding-left: 20px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .learn-card .learn-more li + li { margin-top: 6px; }
     .learn-card .example {
       margin-top: 12px;
       border-radius: 14px;
@@ -1188,6 +1220,19 @@
       padding: 10px;
       font-size: 13px;
       line-height: 1.45;
+    }
+    .learn-card[open] {
+      border-color: rgba(0, 122, 90, .35);
+      box-shadow: 0 16px 42px rgba(29, 29, 31, .08);
+    }
+    .learn-card[open] summary h3::after {
+      content: "Open";
+      margin-left: 8px;
+      color: var(--brand);
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .04em;
     }
     .learn-card.wide {
       grid-column: span 2;
@@ -1880,24 +1925,150 @@
         </div>
       </div>
       <div class="learn-grid">
-        <article class="learn-card wide"><h3>Start here</h3><p>A mutual fund pools money from many investors and invests it in stocks, bonds, gold, silver, or other assets. This app does not tell you what to buy. It helps you study funds by goal, time, risk, and real NAV history.</p><div class="example">Simple rule: money needed soon should usually avoid high volatility. Money for 7-10+ years can usually study growth categories more seriously.</div></article>
-        <article class="learn-card"><h3>SIP</h3><p><strong>Systematic Investment Plan</strong> means investing a fixed amount regularly, usually monthly. SIP helps reduce timing pressure because you buy units across different market levels.</p><div class="example">Example: ₹10,000 every month buys more units when NAV is low and fewer units when NAV is high.</div></article>
-        <article class="learn-card"><h3>NAV</h3><p><strong>Net Asset Value</strong> is the per-unit price of a mutual fund. If you own 100 units and latest NAV is ₹50, your value is about ₹5,000.</p><div class="example">NAV is not like a stock price. A lower NAV does not automatically mean a cheaper or better fund.</div></article>
-        <article class="learn-card"><h3>CAGR</h3><p><strong>Compound Annual Growth Rate</strong> shows the smooth yearly growth between two dates. It is useful for comparing long periods, but it hides ups and downs.</p><div class="example">If ₹1 lakh became ₹1.61 lakh in 5 years, CAGR is about 10% per year.</div></article>
-        <article class="learn-card"><h3>Short-term returns</h3><p>1M, 3M, and 6M returns show recent movement. They can change quickly and should not be treated as the main reason to choose a long-term fund.</p><div class="example">A fund can look great in 3 months but still be unsuitable for your goal.</div></article>
-        <article class="learn-card"><h3>Volatility</h3><p>Volatility measures how much returns move around. High volatility can create higher upside, but also sharper falls and emotional pressure.</p><div class="example">Two funds may have similar CAGR, but the lower-volatility one may feel smoother to hold.</div></article>
-        <article class="learn-card"><h3>Drawdown</h3><p>Drawdown means fall from a previous high. Maximum drawdown estimates the largest historical fall in the available NAV history.</p><div class="example">A -30% drawdown means ₹1,00,000 could have temporarily fallen near ₹70,000 in that period.</div></article>
-        <article class="learn-card"><h3>Direct vs Regular</h3><p><strong>Direct</strong> plans are bought without distributor commission and often have lower expense ratios. <strong>Regular</strong> plans include distributor commission.</p><div class="example">For the same fund, Direct Growth often compounds better over long periods because costs are lower.</div></article>
-        <article class="learn-card"><h3>Growth vs IDCW</h3><p><strong>Growth</strong> keeps gains invested in the fund. <strong>IDCW</strong> may distribute income, so NAV comparisons can be harder for beginners.</p><div class="example">This app prefers Growth variants where identifiable because NAV return comparison is cleaner.</div></article>
-        <article class="learn-card"><h3>Debt, hybrid, equity</h3><p>Debt funds usually focus on bonds. Hybrid funds mix equity and debt. Equity funds invest mainly in stocks and can be more volatile.</p><div class="example">Emergency money usually studies liquid/short-duration style categories, not aggressive equity funds.</div></article>
-        <article class="learn-card"><h3>Large, mid, small cap</h3><p>Large cap funds invest in bigger companies. Mid and small cap funds can grow faster but can also fall more sharply.</p><div class="example">High returns preference may show mid/small-cap style funds only when time and risk allow it.</div></article>
-        <article class="learn-card"><h3>Fund Score</h3><p>The app score combines historical return, consistency, volatility, drawdown, and length of history. It is a study score, not a buy signal.</p><div class="example">A high score means “worth studying deeper,” not “must invest.”</div></article>
-        <article class="learn-card"><h3>Loan Freedom</h3><p>This compares your EMI-only path with a separate SIP side corpus using assumed returns. It estimates when the side corpus may become comparable to the remaining loan balance.</p><div class="example">It does not decide whether you should prepay. Taxes, exit load, lender charges, and peace of mind matter.</div></article>
-        <article class="learn-card"><h3>Freedom Goals</h3><p>First crore and financial freedom calculators estimate time to a target corpus using current investments, monthly SIP, and assumed returns.</p><div class="example">If your return assumption changes from 12% to 8%, the target date can move a lot.</div></article>
-        <article class="learn-card"><h3>Overall Corpus</h3><p>Corpus means total wealth or investment value. The Corpus tab estimates future value from current investments, SIP, lump sum, return assumption, and SIP step-up.</p><div class="example">Use it to answer: “If I keep investing this much, what could my total fund value become?”</div></article>
-        <article class="learn-card"><h3>Gold and silver funds</h3><p>Metal funds can diversify a portfolio, but they can be volatile and may underperform for long periods. This app calculates NAV history only.</p><div class="example">Gold/silver tracker is for studying historical fund movement, not predicting metal prices.</div></article>
-        <article class="learn-card wide"><h3>Common mistakes</h3><p>Do not choose funds only by highest 1-year return. Do not compare Direct and Regular blindly. Do not use equity funds for money needed very soon. Do not assume past CAGR will repeat. Always match fund category with goal, time horizon, and risk comfort.</p><div class="example">Better question: “Can I stay invested through a bad period?” not only “What gave the highest return?”</div></article>
-        <article class="learn-card wide"><h3>PlanSIP FAQ</h3><p><strong>Is PlanSIP a SIP calculator for India?</strong> Yes, it includes SIP planning, historical SIP simulation, first crore planning, financial freedom planning, and corpus calculation. <strong>Does it recommend funds?</strong> No, it gives educational shortlists and historical analysis only. <strong>Where is data from?</strong> Mutual fund search and NAV history come from MFapi.in.</p><div class="example">Use PlanSIP as a study starting point, then verify fund facts, risk, expense ratio, taxation, and suitability before investing.</div></article>
+        <details class="learn-card wide" id="learn-start">
+          <summary><h3>Start here</h3><p>A mutual fund pools money from many investors and invests it in stocks, bonds, gold, silver, or other assets. Use this section to understand the numbers before comparing funds.</p><a class="learn-link" href="#learn-start">Direct lesson link</a></summary>
+          <div class="learn-more">
+            <p>PlanSIP is designed as a study tool, not as a substitute for personal financial advice. A good fund choice depends on goal, time horizon, risk comfort, taxation, exit load, and whether you can stay invested during bad market phases.</p>
+            <ul><li>For money needed soon, stability usually matters more than high return.</li><li>For 7-10+ year goals, equity-oriented categories can be studied more seriously.</li><li>For emergency money, liquid and short-duration style categories are usually more relevant than aggressive growth funds.</li></ul>
+            <div class="example">Simple rule: first match fund category to goal and time. Then study returns, volatility, drawdown, and consistency.</div>
+          </div>
+        </details>
+        <details class="learn-card" id="learn-sip">
+          <summary><h3>SIP</h3><p><strong>Systematic Investment Plan</strong> means investing a fixed amount regularly, usually monthly. It reduces timing pressure because you buy across different market levels.</p><a class="learn-link" href="#learn-sip">Direct lesson link</a></summary>
+          <div class="learn-more">
+            <p>In a SIP, each monthly investment buys units based on that day's NAV. When NAV is lower, the same amount buys more units. When NAV is higher, it buys fewer units. Over long periods this can smooth the entry price, but it does not remove market risk.</p>
+            <ul><li>SIP is a method of investing, not a guaranteed return product.</li><li>SIP works best when the investment horizon is long enough for market cycles.</li><li>Increasing SIP amount every year can make a large difference to long-term corpus.</li></ul>
+            <div class="example">Example: ₹10,000 every month for 10 years means ₹12,00,000 invested before considering returns.</div>
+          </div>
+        </details>
+        <details class="learn-card" id="learn-nav">
+          <summary><h3>NAV</h3><p><strong>Net Asset Value</strong> is the per-unit price of a mutual fund. Your fund value is units owned multiplied by latest NAV.</p><a class="learn-link" href="#learn-nav">Direct lesson link</a></summary>
+          <div class="learn-more">
+            <p>NAV changes because the value of the fund's underlying holdings changes. If a fund owns stocks, bonds, gold, or other securities, the market value of those holdings affects the NAV after expenses.</p>
+            <ul><li>Lower NAV does not automatically mean cheaper or better.</li><li>Higher NAV does not automatically mean expensive.</li><li>For comparison, percentage return matters more than NAV level.</li></ul>
+            <div class="example">If you own 100 units and latest NAV is ₹50, the approximate value is ₹5,000.</div>
+          </div>
+        </details>
+        <details class="learn-card" id="learn-cagr">
+          <summary><h3>CAGR</h3><p><strong>Compound Annual Growth Rate</strong> shows the smooth yearly growth between two dates. It is useful for long-period comparisons.</p><a class="learn-link" href="#learn-cagr">Direct lesson link</a></summary>
+          <div class="learn-more">
+            <p>CAGR answers: what steady yearly return would turn the starting value into the ending value? It is helpful for 3Y, 5Y, and 10Y comparisons, but it hides the journey in between.</p>
+            <ul><li>CAGR can look clean even if the fund had large falls during the period.</li><li>Compare CAGR along with volatility and drawdown.</li><li>Short periods like 1 month or 3 months are usually absolute returns, not meaningful long-term CAGR.</li></ul>
+            <div class="example">If ₹1 lakh became ₹1.61 lakh in 5 years, CAGR is about 10% per year.</div>
+          </div>
+        </details>
+        <details class="learn-card" id="learn-short-term-returns">
+          <summary><h3>Short-term returns</h3><p>1M, 3M, and 6M returns show recent movement. They can change quickly and should not be the main reason for a long-term fund choice.</p><a class="learn-link" href="#learn-short-term-returns">Direct lesson link</a></summary>
+          <div class="learn-more">
+            <p>Short-term returns can be useful for context, but they often reflect recent market mood. A sector rally, one-time event, or temporary correction can make a fund look unusually good or bad.</p>
+            <ul><li>Use 1M and 3M as recent trend indicators only.</li><li>For 3-5 year goals, focus more on risk and consistency.</li><li>For 7-10 year goals, study longer CAGR and drawdown history.</li></ul>
+            <div class="example">A fund can look great in 3 months and still be unsuitable for your goal.</div>
+          </div>
+        </details>
+        <details class="learn-card" id="learn-volatility">
+          <summary><h3>Volatility</h3><p>Volatility measures how much returns move around. High volatility can create higher upside, but also sharper falls and emotional pressure.</p><a class="learn-link" href="#learn-volatility">Direct lesson link</a></summary>
+          <div class="learn-more">
+            <p>Two funds can have similar long-term returns but very different experiences. The more volatile fund may rise faster in good phases and fall harder in bad phases. Many investors stop SIPs or exit during sharp falls, so volatility matters in real life.</p>
+            <ul><li>Low volatility usually feels smoother but may have lower upside.</li><li>High volatility needs longer time and stronger risk comfort.</li><li>Volatility should be judged with goal timeline, not alone.</li></ul>
+            <div class="example">A smoother fund may be easier to hold even if another fund had slightly higher CAGR.</div>
+          </div>
+        </details>
+        <details class="learn-card" id="learn-drawdown">
+          <summary><h3>Drawdown</h3><p>Drawdown means fall from a previous high. Maximum drawdown estimates the largest historical fall in available NAV history.</p><a class="learn-link" href="#learn-drawdown">Direct lesson link</a></summary>
+          <div class="learn-more">
+            <p>Drawdown shows how painful a bad phase could have been historically. It is not a prediction, but it helps you ask whether you could stay invested if a similar fall happened again.</p>
+            <ul><li>Maximum drawdown is usually more emotional than CAGR.</li><li>Short goals should avoid categories with large drawdowns.</li><li>Equity funds can have meaningful drawdowns even when long-term returns are good.</li></ul>
+            <div class="example">A -30% drawdown means ₹1,00,000 could have temporarily fallen near ₹70,000.</div>
+          </div>
+        </details>
+        <details class="learn-card" id="learn-direct-regular">
+          <summary><h3>Direct vs Regular</h3><p><strong>Direct</strong> plans are bought without distributor commission. <strong>Regular</strong> plans include distributor commission and often have higher costs.</p><a class="learn-link" href="#learn-direct-regular">Direct lesson link</a></summary>
+          <div class="learn-more">
+            <p>Direct and Regular plans of the same scheme usually invest in the same portfolio, but the expense ratio can differ. Over long periods, lower costs can compound into a meaningful difference.</p>
+            <ul><li>Direct plans are usually suitable for investors who can choose and manage funds themselves.</li><li>Regular plans may be used when advice or distributor support is being provided.</li><li>When comparing returns, avoid mixing Direct and Regular variants blindly.</li></ul>
+            <div class="example">For the same fund, Direct Growth often compounds better over long periods because costs are lower.</div>
+          </div>
+        </details>
+        <details class="learn-card" id="learn-growth-idcw">
+          <summary><h3>Growth vs IDCW</h3><p><strong>Growth</strong> keeps gains invested in the fund. <strong>IDCW</strong> may distribute income, which can make return comparison harder.</p><a class="learn-link" href="#learn-growth-idcw">Direct lesson link</a></summary>
+          <div class="learn-more">
+            <p>Growth plans reflect compounding inside the NAV. IDCW plans may declare distributions, but distributions are not guaranteed and can reduce NAV when paid. For beginners, Growth variants are usually easier to study with NAV-based returns.</p>
+            <ul><li>Growth is commonly used for long-term wealth building.</li><li>IDCW may be considered by people looking for distributions, but it is not fixed income.</li><li>Tax treatment can differ and should be checked before choosing.</li></ul>
+            <div class="example">PlanSIP prefers Growth variants where identifiable because NAV return comparison is cleaner.</div>
+          </div>
+        </details>
+        <details class="learn-card" id="learn-fund-types">
+          <summary><h3>Debt, hybrid, equity</h3><p>Debt funds focus on bonds. Hybrid funds mix equity and debt. Equity funds invest mainly in stocks and can be more volatile.</p><a class="learn-link" href="#learn-fund-types">Direct lesson link</a></summary>
+          <div class="learn-more">
+            <p>Fund category matters before fund name. A strong equity fund may still be wrong for a 1-year goal. A liquid fund may be too conservative for a 15-year retirement goal. Match category to time horizon first.</p>
+            <ul><li>Debt: often studied for shorter or stability-focused needs.</li><li>Hybrid: mixes growth and stability, but still carries market risk.</li><li>Equity: better suited to long goals and investors who can handle falls.</li></ul>
+            <div class="example">Emergency money usually studies liquid or short-duration style categories, not aggressive equity funds.</div>
+          </div>
+        </details>
+        <details class="learn-card" id="learn-market-cap">
+          <summary><h3>Large, mid, small cap</h3><p>Large cap funds invest in bigger companies. Mid and small cap funds can grow faster but can also fall more sharply.</p><a class="learn-link" href="#learn-market-cap">Direct lesson link</a></summary>
+          <div class="learn-more">
+            <p>Large cap companies are usually more established. Mid cap and small cap companies can offer higher growth potential, but their prices can swing more and liquidity can be lower during stressed markets.</p>
+            <ul><li>Large cap: generally comparatively steadier within equity.</li><li>Mid cap: higher growth potential with higher risk.</li><li>Small cap: can be very volatile and needs longer holding comfort.</li></ul>
+            <div class="example">High returns preference may show mid/small-cap style funds only when time and risk allow it.</div>
+          </div>
+        </details>
+        <details class="learn-card" id="learn-fund-score">
+          <summary><h3>Fund Score</h3><p>The app score combines historical return, consistency, volatility, drawdown, and length of history. It is a study score, not a buy signal.</p><a class="learn-link" href="#learn-fund-score">Direct lesson link</a></summary>
+          <div class="learn-more">
+            <p>PlanSIP's Fund Score is meant to make screening easier. It rewards funds that show stronger historical return, steadier monthly behavior, lower volatility, smaller drawdowns, and enough NAV history to study. It does not know your full financial life.</p>
+            <ul><li>A high score means worth studying deeper.</li><li>A low score does not automatically mean bad; it may have insufficient history or category mismatch.</li><li>Never use the score alone to invest.</li></ul>
+            <div class="example">The score is analytical and educational. It is not investment advice.</div>
+          </div>
+        </details>
+        <details class="learn-card" id="learn-loan-freedom">
+          <summary><h3>Loan Freedom</h3><p>This compares your EMI-only path with a separate SIP side corpus and estimates when that corpus may become comparable to remaining loan balance.</p><a class="learn-link" href="#learn-loan-freedom">Direct lesson link</a></summary>
+          <div class="learn-more">
+            <p>The calculator helps study a question: if you keep paying EMI and invest separately, when might the investment corpus become large enough to close the loan? The answer depends heavily on loan rate, SIP amount, return assumption, tax, and market behavior.</p>
+            <ul><li>Prepaying loan gives a clearer interest saving but reduces liquidity.</li><li>Investing separately keeps liquidity but adds market risk.</li><li>Real decisions should consider tax, charges, peace of mind, and job stability.</li></ul>
+            <div class="example">It does not decide whether you should prepay. It shows possible paths for study.</div>
+          </div>
+        </details>
+        <details class="learn-card" id="learn-freedom-goals">
+          <summary><h3>Freedom Goals</h3><p>First crore and financial freedom calculators estimate time to a target corpus using current investments, monthly SIP, and assumed returns.</p><a class="learn-link" href="#learn-freedom-goals">Direct lesson link</a></summary>
+          <div class="learn-more">
+            <p>Financial freedom planning starts with a target corpus. Many people estimate it as annual expenses multiplied by a freedom multiple such as 25x or 30x. This is only a planning shortcut, not a guarantee.</p>
+            <ul><li>First crore is a milestone goal for building investing discipline.</li><li>Financial freedom needs expense tracking, inflation thinking, and asset allocation.</li><li>Small return assumption changes can move the target date a lot.</li></ul>
+            <div class="example">If your return assumption changes from 12% to 8%, the target date can move significantly.</div>
+          </div>
+        </details>
+        <details class="learn-card" id="learn-corpus">
+          <summary><h3>Overall Corpus</h3><p>Corpus means total wealth or investment value. The Corpus tab estimates future value from current investments, SIP, lump sum, return assumption, and SIP step-up.</p><a class="learn-link" href="#learn-corpus">Direct lesson link</a></summary>
+          <div class="learn-more">
+            <p>A corpus calculator helps answer: if I keep investing this much, what could my total investment value become? It is useful for retirement, education, house goals, and long-term wealth building.</p>
+            <ul><li>Current investments are your starting base.</li><li>Monthly SIP adds disciplined future contributions.</li><li>SIP step-up models increasing investment as income grows.</li></ul>
+            <div class="example">A yearly SIP step-up can matter as much as chasing a higher return assumption.</div>
+          </div>
+        </details>
+        <details class="learn-card" id="learn-metals">
+          <summary><h3>Gold and silver funds</h3><p>Metal funds can diversify a portfolio, but they can be volatile and may underperform for long periods. PlanSIP calculates NAV history only.</p><a class="learn-link" href="#learn-metals">Direct lesson link</a></summary>
+          <div class="learn-more">
+            <p>Gold and silver mutual funds are often studied as diversifiers. They do not behave like equity funds or debt funds. Their returns depend on metal prices, currency movement, fund structure, expenses, and market demand.</p>
+            <ul><li>Gold may help during some stressed market phases, but not always.</li><li>Silver can be more volatile because it has industrial demand too.</li><li>Metal funds should be studied as part of allocation, not as a guaranteed hedge.</li></ul>
+            <div class="example">The metals tracker studies historical fund movement. It does not predict gold or silver prices.</div>
+          </div>
+        </details>
+        <details class="learn-card wide" id="learn-mistakes">
+          <summary><h3>Common mistakes</h3><p>Do not choose funds only by highest 1-year return. Always match fund category with goal, time horizon, risk comfort, and ability to stay invested.</p><a class="learn-link" href="#learn-mistakes">Direct lesson link</a></summary>
+          <div class="learn-more">
+            <ul><li>Choosing only the highest recent return and ignoring risk.</li><li>Comparing Direct and Regular plans as if costs are the same.</li><li>Using equity funds for money needed very soon.</li><li>Assuming past CAGR will repeat in the future.</li><li>Ignoring drawdown and stopping SIPs during bad market phases.</li></ul>
+            <div class="example">Better question: “Can I stay invested through a bad period?” not only “What gave the highest return?”</div>
+          </div>
+        </details>
+        <details class="learn-card wide" id="learn-faq">
+          <summary><h3>PlanSIP FAQ</h3><p>Quick answers about what PlanSIP does, where data comes from, and why the tool is educational instead of advisory.</p><a class="learn-link" href="#learn-faq">Direct lesson link</a></summary>
+          <div class="learn-more">
+            <p><strong>Is PlanSIP a SIP calculator for India?</strong> Yes. It includes SIP planning, historical SIP simulation, first crore planning, financial freedom planning, and corpus calculation.</p>
+            <p><strong>Does PlanSIP recommend funds?</strong> No. It gives educational shortlists and historical analysis only. It does not advise buying, selling, or holding any fund.</p>
+            <p><strong>Where is data from?</strong> Mutual fund search and NAV history come from MFapi.in and are fetched directly in the user's browser.</p>
+            <div class="example">Use PlanSIP as a study starting point, then verify fund facts, risk, expense ratio, taxation, and suitability before investing.</div>
+          </div>
+        </details>
       </div>
       <div class="notice">
         This tool is for educational and analytical purposes only. Mutual fund investments are subject to market risks. Historical returns do not guarantee future performance. Consider consulting a SEBI-registered investment adviser before investing.
@@ -1999,6 +2170,7 @@
       updateFreedomFields();
       wireLanguageSelector();
       prefetchRecommendationSearches();
+      if (window.location.hash) setTimeout(() => routeToHash(window.location.hash.slice(1), false), 0);
     }
 
     function cacheEls() {
@@ -2112,19 +2284,36 @@
       document.querySelectorAll("a[href^='#']").forEach(anchor => {
         anchor.addEventListener("click", event => {
           const id = anchor.getAttribute("href").slice(1);
-          if (document.getElementById(id)) {
+          const target = document.getElementById(id);
+          if (target) {
             event.preventDefault();
-            showTab(id);
-            document.getElementById(id).scrollIntoView({ behavior: "smooth", block: "start" });
+            event.stopPropagation();
+            routeToHash(id, true);
           }
         });
       });
+      window.addEventListener("hashchange", () => routeToHash(window.location.hash.slice(1), false));
     }
 
-    function showTab(id) {
+    function routeToHash(id, updateHash) {
+      const target = document.getElementById(id);
+      const section = target?.classList.contains("section") ? target : target?.closest(".section");
+      if (!section) return;
+      showTab(section.id, updateHash ? id : null);
+      if (target && target !== section) {
+        if (target.matches("details")) target.open = true;
+        requestAnimationFrame(() => target.scrollIntoView({ behavior: "smooth", block: "start" }));
+      } else {
+        requestAnimationFrame(() => section.scrollIntoView({ behavior: "smooth", block: "start" }));
+      }
+    }
+
+    function showTab(id, hashId = id) {
+      const section = document.getElementById(id);
+      if (!section?.classList.contains("section")) return;
       document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === id));
       document.querySelectorAll(".section").forEach(s => s.classList.toggle("active", s.id === id));
-      history.replaceState(null, "", "#" + id);
+      if (hashId) history.replaceState(null, "", "#" + hashId);
     }
 
     function wireInputs() {
