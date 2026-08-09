@@ -569,6 +569,69 @@
       background: linear-gradient(90deg, var(--brand), var(--accent));
       transition: width .28s ease;
     }
+    .fund-chart {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(237, 248, 244, .72), rgba(255, 255, 255, .82));
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+    .fund-chart-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .fund-chart-title {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 850;
+    }
+    .fund-chart-return {
+      font-size: 13px;
+      color: var(--ink);
+      font-weight: 900;
+    }
+    .fund-chart-controls {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .fund-chart-btn {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--muted);
+      padding: 6px 9px;
+      font-size: 12px;
+      font-weight: 850;
+    }
+    .fund-chart-btn.active {
+      color: #fff;
+      background: var(--brand);
+      border-color: var(--brand);
+    }
+    .sparkline {
+      width: 100%;
+      height: 92px;
+      display: block;
+    }
+    .sparkline path.line {
+      fill: none;
+      stroke: var(--brand);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .sparkline path.area {
+      fill: rgba(0, 122, 90, .12);
+      stroke: none;
+    }
+    .sparkline .axis {
+      stroke: rgba(110, 110, 115, .22);
+      stroke-width: 1;
+    }
     .freedom-card {
       display: grid;
       gap: 16px;
@@ -1035,7 +1098,7 @@
         background: linear-gradient(135deg, #6ee7b7, var(--brand-2));
         box-shadow: 0 16px 38px rgba(18, 184, 134, .22);
       }
-      .eyebrow, .mini-row, .choice, .fund-card, .metric, .learn-card, .insight, .savings-circle-wrap, .period-btn,
+      .eyebrow, .mini-row, .choice, .fund-card, .metric, .learn-card, .insight, .savings-circle-wrap, .period-btn, .fund-chart, .fund-chart-btn,
       .search-item, .chip, .chart-wrap, .table-wrap, .input, .segment {
         background: rgba(28, 28, 30, .86);
         border-color: rgba(255, 255, 255, .12);
@@ -1088,6 +1151,9 @@
       }
       .bar-track, .return-track {
         background: rgba(255, 255, 255, .10);
+      }
+      .sparkline .axis {
+        stroke: rgba(255, 255, 255, .16);
       }
       .timeline-track {
         background: rgba(255, 255, 255, .10);
@@ -1920,7 +1986,7 @@
     }
 
     async function getAnalysedFund(candidate) {
-      const cacheKey = "ffi_analysis_v3_" + candidate.schemeCode;
+      const cacheKey = "ffi_analysis_v4_" + candidate.schemeCode;
       const cached = readCache(cacheKey, ANALYSIS_TTL);
       if (cached) return hydrateAnalysis(cached);
       const detail = await getFundDetails(candidate.schemeCode);
@@ -1974,6 +2040,7 @@
         latest: analysis.latest ? { date: analysis.latest.date.toISOString(), nav: analysis.latest.nav } : null,
         returns: analysis.returns,
         periodReturns: analysis.periodReturns,
+        navPath: analysis.navPath,
         volatility: analysis.volatility,
         consistency: analysis.consistency,
         maxDrawdown: analysis.maxDrawdown,
@@ -1986,7 +2053,8 @@
       if (!analysis) return null;
       return {
         ...analysis,
-        latest: analysis.latest ? { ...analysis.latest, date: new Date(analysis.latest.date) } : null
+        latest: analysis.latest ? { ...analysis.latest, date: new Date(analysis.latest.date) } : null,
+        navPath: Array.isArray(analysis.navPath) ? analysis.navPath.map(point => ({ ...point, date: new Date(point.date) })) : []
       };
     }
 
@@ -2199,6 +2267,9 @@
       });
       els.recommendationResults.querySelectorAll("[data-period]").forEach(button => {
         button.addEventListener("click", () => updateReturnChart(button.dataset.period));
+      });
+      els.recommendationResults.querySelectorAll("[data-fund-chart-period]").forEach(button => {
+        button.addEventListener("click", () => updateFundChart(button));
       });
       loadMostInvestedStudyFunds(funds.map(fund => fund.code));
       els.recommendationResults.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -2431,12 +2502,91 @@
             <div class="metric"><small>5Y CAGR</small><strong>${formatPercent(fund.returns.y5)}</strong></div>
             <div class="metric"><small>Score</small><strong>${fund.score}/100</strong></div>
           </div>
+          ${renderFundNavChart(fund, "all")}
           <div class="why">${escapeHTML(whyMatches(fund, profile))}</div>
           <button class="btn btn-ghost" type="button" data-detail>View detailed analysis</button>
           <div class="detail">
             Latest NAV: ${escapeHTML(formatNav(fund.latest.nav))} on ${escapeHTML(formatDate(fund.latest.date))}. 1Y return: ${escapeHTML(formatPercent(fund.returns.y1))}. 10Y CAGR: ${escapeHTML(formatPercent(fund.returns.y10))}. Volatility: ${escapeHTML(formatPercent(fund.volatility))}. Maximum drawdown: ${escapeHTML(formatPercent(fund.maxDrawdown))}. Positive monthly periods: ${escapeHTML(formatPercent(fund.consistency))}. Available NAV history: ${escapeHTML(fund.historyYears.toFixed(1))} years. The score uses historical return, consistency, volatility, drawdown, and history length. It is not investment advice.
           </div>
         </article>
+      `;
+    }
+
+    function renderFundNavChart(fund, period) {
+      const chart = fundChartData(fund, period);
+      const periods = [["y1", "1Y"], ["y3", "3Y"], ["y5", "5Y"], ["all", "All"]];
+      return `
+        <div class="fund-chart" data-fund-chart="${escapeAttr(fund.code)}">
+          <div class="fund-chart-top">
+            <span class="fund-chart-title" data-chart-title>${escapeHTML(chart.label)}</span>
+            <span class="fund-chart-return" data-chart-return>${escapeHTML(formatPercent(chart.returnValue))}</span>
+          </div>
+          <div data-chart-svg>${renderSparkline(chart.points)}</div>
+          <div class="fund-chart-controls" role="group" aria-label="Choose fund chart period">
+            ${periods.map(([value, label]) => `
+              <button class="fund-chart-btn ${value === period ? "active" : ""}" type="button" data-fund-chart-period="${escapeAttr(value)}">${escapeHTML(label)}</button>
+            `).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    function updateFundChart(button) {
+      const card = button.closest(".fund-card");
+      const chartBox = button.closest("[data-fund-chart]");
+      if (!card || !chartBox) return;
+      const fund = state.lastRecommendations.find(item => String(item.code) === String(chartBox.dataset.fundChart));
+      if (!fund) return;
+      const chart = fundChartData(fund, button.dataset.fundChartPeriod);
+      chartBox.querySelectorAll("[data-fund-chart-period]").forEach(item => item.classList.toggle("active", item === button));
+      chartBox.querySelector("[data-chart-title]").textContent = chart.label;
+      chartBox.querySelector("[data-chart-return]").textContent = formatPercent(chart.returnValue);
+      chartBox.querySelector("[data-chart-svg]").innerHTML = renderSparkline(chart.points);
+    }
+
+    function fundChartData(fund, period) {
+      const points = Array.isArray(fund.navPath) ? fund.navPath : [];
+      const latest = points[points.length - 1];
+      if (!latest) return { points: [], returnValue: null, label: "NAV history unavailable" };
+      let filtered = points;
+      let label = "Since start";
+      if (period !== "all") {
+        const years = Number(period.replace("y", ""));
+        const start = addYears(latest.date, -years);
+        filtered = points.filter(point => point.date >= start);
+        label = `${years}Y NAV path`;
+      }
+      if (filtered.length < 2) filtered = points.slice(-2);
+      const first = filtered[0];
+      const last = filtered[filtered.length - 1];
+      const returnValue = first && last ? last.nav / first.nav - 1 : null;
+      return { points: filtered, returnValue, label };
+    }
+
+    function renderSparkline(points) {
+      if (!points || points.length < 2) {
+        return `<div class="empty" style="padding:12px">Graph unavailable</div>`;
+      }
+      const width = 320;
+      const height = 92;
+      const pad = 8;
+      const navs = points.map(point => point.nav);
+      const min = Math.min(...navs);
+      const max = Math.max(...navs);
+      const range = max - min || 1;
+      const coords = points.map((point, index) => {
+        const x = pad + index / Math.max(points.length - 1, 1) * (width - pad * 2);
+        const y = pad + (1 - (point.nav - min) / range) * (height - pad * 2);
+        return [x, y];
+      });
+      const line = coords.map(([x, y], index) => `${index ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ");
+      const area = `${line} L${(width - pad).toFixed(1)} ${(height - pad).toFixed(1)} L${pad.toFixed(1)} ${(height - pad).toFixed(1)} Z`;
+      return `
+        <svg class="sparkline" viewBox="0 0 ${width} ${height}" role="img" aria-label="Fund NAV graph">
+          <line class="axis" x1="${pad}" y1="${height - pad}" x2="${width - pad}" y2="${height - pad}"></line>
+          <path class="area" d="${escapeAttr(area)}"></path>
+          <path class="line" d="${escapeAttr(line)}"></path>
+        </svg>
       `;
     }
 
@@ -2468,8 +2618,20 @@
       const consistency = monthly.length ? monthly.filter(v => v > 0).length / monthly.length : null;
       const maxDrawdown = maximumDrawdown(history);
       const historyYears = (latest.date - history[0].date) / (365.25 * 24 * 60 * 60 * 1000);
+      const navPath = sampleNavPath(history);
       const score = fundScore({ returns, volatility, consistency, maxDrawdown, historyYears });
-      return { code: searchItem.schemeCode, name, category, type, history, latest, returns, periodReturns, volatility, consistency, maxDrawdown, historyYears, score };
+      return { code: searchItem.schemeCode, name, category, type, history, latest, returns, periodReturns, navPath, volatility, consistency, maxDrawdown, historyYears, score };
+    }
+
+    function sampleNavPath(history) {
+      if (!history.length) return [];
+      const maxPoints = 140;
+      const step = Math.max(1, Math.ceil(history.length / maxPoints));
+      const sampled = [];
+      for (let i = 0; i < history.length; i += step) sampled.push(history[i]);
+      const latest = history[history.length - 1];
+      if (sampled[sampled.length - 1] !== latest) sampled.push(latest);
+      return sampled.map(point => ({ date: point.date.toISOString(), nav: point.nav }));
     }
 
     function trailingReturn(history, years, annualized) {
