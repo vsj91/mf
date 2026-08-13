@@ -476,6 +476,10 @@ input[type="range"] {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
+#loanFundSuggestions .results-grid,
+#freedomFundSuggestions .results-grid {
+  grid-template-columns: 1fr !important;
+}
 .fund-card {
   border: 1px solid var(--line);
   border-radius: 24px;
