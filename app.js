@@ -583,21 +583,48 @@ function recommendationQueries(profile) {
 async function getRecommendationCandidates(profile) {
   const searches = await Promise.all(recommendationQueries(profile).map(async query => {
     try {
-      return (await searchFunds(query)).slice(0, 5);
+      return (await searchFunds(query)).slice(0, 6);
     } catch (_) {
       return [];
     }
   }));
   const all = searches.flat();
   const map = new Map();
+  // dedupe by family but keep multiple distinct funds where available (less aggressive)
   all.forEach(fund => {
-    const family = fund.schemeName.toLowerCase()
+    const family = (fund.schemeName || "").toLowerCase()
       .replace(/\b(direct|regular|growth|plan|option)\b/g, "")
       .replace(/[^a-z0-9]+/g, " ")
       .trim();
-    if (!map.has(family) || /direct/i.test(fund.schemeName)) map.set(family, fund);
+    if (!map.has(family)) map.set(family, []);
+    map.get(family).push(fund);
   });
-  return Array.from(map.values()).slice(0, 12);
+
+  // Flatten but preserve multiple options per family; compute quick match score to bias ordering
+  const candidates = [];
+  for (const [, group] of map) {
+    for (const fund of group) candidates.push(fund);
+  }
+
+  // Score candidates by quick profile text match before heavier analysis
+  const scored = candidates.map(fund => ({ fund, s: quickProfileMatchScore(fund, profile) }));
+  scored.sort((a, b) => b.s - a.s);
+
+  // Return top unique families but allow some family variety
+  const final = [];
+  const seenFamilies = new Set();
+  for (const { fund } of scored) {
+    const family = (fund.schemeName || "").toLowerCase()
+      .replace(/\b(direct|regular|growth|plan|option)\b/g, "")
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+    if (!seenFamilies.has(family) || final.length < 8) {
+      final.push(fund);
+      seenFamilies.add(family);
+    }
+    if (final.length >= 18) break;
+  }
+  return final.slice(0, 12);
 }
 
 function profileFitScore(fund, profile) {
@@ -631,6 +658,31 @@ function returnPreferenceScore(fund, preference) {
   const moderateBonus = /balanced|large cap|index|flexi|elss/.test(category) ? 10 : 0;
   const highRiskPenalty = /small cap|sector|thematic/.test(category) ? 10 : 0;
   return scale(longReturn, 0.02, 0.18) * 14 + (1 - scale(fund.volatility, 0.04, 0.24)) * 12 + moderateBonus - highRiskPenalty;
+}
+
+// Quick, cheap text-match score to bias candidate ordering before full analysis.
+function quickProfileMatchScore(fund, profile) {
+  const text = `${fund.schemeName || fund.name || ""} ${fund.schemeCategory || fund.category || ""}`.toLowerCase();
+  let score = 0;
+  // preference by direct/growth naming
+  if (/direct/.test(text)) score += 3;
+  if (/growth/.test(text)) score += 2;
+
+  // risk-based keywords
+  if (profile.risk === "Low") score += (/liquid|overnight|short|corporate|debt|money market|ultra short/.test(text) ? 6 : 0);
+  if (profile.risk === "Moderate") score += (/hybrid|balanced|large cap|index|elss|flexi/.test(text) ? 5 : 0);
+  if (profile.risk === "High") score += (/flexi|large and mid|large & mid|mid cap|value|equity|mid-cap/.test(text) ? 5 : 0);
+  if (profile.risk === "Very High") score += (/small cap|sector|thematic|mid cap|small-cap/.test(text) ? 6 : 0);
+
+  // return preference
+  if (profile.returnPref === "stable") score += (/liquid|short|debt|corporate|balanced|large cap|index/.test(text) ? 4 : 0);
+  if (profile.returnPref === "high") score += (/small cap|mid cap|flexi|focused|value|sector|thematic/.test(text) ? 5 : 0);
+
+  // duration hints
+  if (profile.duration && (profile.duration.id === "1-3")) score += (/short|liquid|overnight/.test(text) ? 3 : 0);
+  if (profile.duration && (profile.duration.id === "10+")) score += (/elss|nifty|index|large cap/.test(text) ? 3 : 0);
+
+  return score;
 }
 
 function renderRecommendations(funds, profile, amount) {
