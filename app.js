@@ -523,12 +523,25 @@ async function findFunds() {
       .sort((a, b) => b.finalRank - a.finalRank)
       .slice(0, 3);
     if (!results.length) throw new Error("MFapi returned insufficient recent NAV history for the shortlisted funds. Try a different risk or duration.");
-    renderRecommendations(results, profile, amount);
+    const hydratedResults = await hydrateFundsWithHistory(results);
+    renderRecommendations(hydratedResults, profile, amount);
   } catch (error) {
     showError(els.findError, error.message || "Something went wrong while finding funds.");
   } finally {
     setFindLoading(false);
   }
+}
+
+async function hydrateFundsWithHistory(funds) {
+  return Promise.all(funds.map(async fund => {
+    if (Array.isArray(fund.history) && fund.history.length) return fund;
+    try {
+      const detail = await getFundDetails(fund.code);
+      return { ...fund, history: detail.history, latest: detail.latest || fund.latest };
+    } catch (_) {
+      return { ...fund, history: [] };
+    }
+  }));
 }
 
 function getProfile() {
@@ -912,6 +925,13 @@ function renderFundCard(fund, profile, amount, best) {
 }
 
 function renderPastSipCorpus(fund, amount, years) {
+  if (!Array.isArray(fund.history) || !fund.history.length || !fund.latest) {
+    return `
+      <div class="why">
+        If you had started a ${escapeHTML(INR.format(amount))}/month SIP ${escapeHTML(String(years))} years ago, this fund does not have enough NAV history to reconstruct a clean result.
+      </div>
+    `;
+  }
   const simulation = simulateSip(fund, amount, years);
   if (!simulation || simulation.instalments < Math.max(6, years * 8)) {
     return `
