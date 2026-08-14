@@ -642,31 +642,8 @@ async function findFunds() {
   try {
     const amount = readMoney(els.monthlyAmount.value) || 10000;
     const profile = getProfile();
-    const candidates = await getRecommendationCandidates(profile);
-    if (!candidates.length) throw new Error("Could not find candidate funds for this profile.");
-    const analysed = (await Promise.all(candidates.slice(0, 16).map(async candidate => {
-      try {
-        const analysis = await getAnalysedFund(candidate);
-        if (!analysis) return null;
-        analysis.profileFit = profileFitScore(analysis, profile);
-        analysis.finalRank = analysis.score + analysis.profileFit + returnPreferenceScore(analysis, profile.returnPref, profile);
-        return analysis;
-      } catch (_) {
-        return null;
-      }
-    }))).filter(Boolean);
-
-    // Apply strict profile-based filtering to favour matching funds for risk/duration/return
-    const filteredByProfile = strictRecommendationFilter(analysed, profile);
-    const sourceList = filteredByProfile.length ? filteredByProfile : analysed;
-
-    const results = sourceList
-      .filter(fund => fund.latest && isRecentNav(fund.latest.date))
-      .sort((a, b) => b.finalRank - a.finalRank)
-      .slice(0, 3);
-    if (!results.length) throw new Error("MFapi returned insufficient recent NAV history for the shortlisted funds. Try a different risk or duration.");
-    const hydratedResults = await hydrateFundsWithHistory(results);
-    renderRecommendations(hydratedResults, profile, amount);
+    const funds = await recommendFundsForProfile(profile, amount, { hydrateHistory: true });
+    renderRecommendations(funds, profile, amount);
   } catch (error) {
     showError(els.findError, error.message || "Something went wrong while finding funds.");
   } finally {
@@ -786,6 +763,86 @@ function recommendationQueries(profile) {
   if (profile.returnPref === "stable") base = ["nifty 50 index fund direct growth", "large cap fund direct growth", "balanced advantage fund direct growth"].concat(base);
   if (profile.returnPref === "high" && profile.risk !== "Low") base = ["flexi cap fund direct growth", "mid cap fund direct growth", "large and mid cap fund direct growth"].concat(base);
   return [...new Set(base)];
+}
+
+async function recommendFundsForProfile(profile, amount = 10000, options = {}) {
+  const analysisLimit = Number.isFinite(options.analysisLimit) ? options.analysisLimit : 16;
+  const requestedCount = Number.isFinite(options.count)
+    ? Math.max(1, Math.floor(options.count))
+    : suggestedFundCount(amount, 3);
+
+  const candidates = await getRecommendationCandidates(profile);
+  if (!candidates.length) throw new Error("Could not find candidate funds for this profile.");
+
+  const analysed = (await Promise.all(candidates.slice(0, analysisLimit).map(async candidate => {
+    try {
+      // Do not spend NAV requests on a category that already fails the horizon/goal hard gate.
+      if (!suitabilityAllowsFund(candidate, profile)) return null;
+      const analysis = await getAnalysedFund(candidate);
+      if (!analysis || !suitabilityAllowsFund(analysis, profile)) return null;
+      analysis.profileFit = profileFitScore(analysis, profile);
+      analysis.finalRank = analysis.score
+        + analysis.profileFit
+        + returnPreferenceScore(analysis, profile.returnPref, profile);
+      return analysis;
+    } catch (_) {
+      return null;
+    }
+  }))).filter(Boolean);
+
+  // The strict filter is shared by Find Funds, Salary Planner, Loan Freedom,
+  // First Crore and Financial Freedom. There is intentionally no fallback to
+  // an unsuitable category when the time horizon hard gate rejects it.
+  const filtered = strictRecommendationFilter(analysed, profile)
+    .filter(fund => fund.latest && isRecentNav(fund.latest.date))
+    .sort((a, b) => b.finalRank - a.finalRank);
+
+  if (!filtered.length) {
+    throw new Error("MFapi did not return enough suitable funds with recent NAV history for this profile.");
+  }
+
+  const diversified = diversifyRecommendationResults(filtered, requestedCount);
+  if (options.hydrateHistory) return hydrateFundsWithHistory(diversified);
+  return diversified;
+}
+
+function recommendationCategoryBucket(fund) {
+  const text = fundCategoryText(fund);
+  if (/overnight|liquid/.test(text)) return "liquid";
+  if (/money market|ultra short|short duration|short term/.test(text)) return "short-debt";
+  if (/corporate bond|banking.*psu|gilt|g-sec|debt/.test(text)) return "debt";
+  if (/balanced advantage|dynamic asset|hybrid|multi asset/.test(text)) return "hybrid";
+  if (/nifty|sensex|index/.test(text)) return "index";
+  if (/large cap/.test(text) && !/large & mid|large and mid/.test(text)) return "large-cap";
+  if (/flexi/.test(text)) return "flexi-cap";
+  if (/large & mid|large and mid/.test(text)) return "large-mid";
+  if (/mid cap/.test(text)) return "mid-cap";
+  if (/small cap/.test(text)) return "small-cap";
+  if (/sector|thematic/.test(text)) return "sectoral";
+  return "other";
+}
+
+function diversifyRecommendationResults(rankedFunds, count) {
+  const target = Math.min(Math.max(1, count), rankedFunds.length);
+  if (target <= 1) return rankedFunds.slice(0, target);
+
+  const selected = [];
+  const usedBuckets = new Set();
+  for (const fund of rankedFunds) {
+    const bucket = recommendationCategoryBucket(fund);
+    if (usedBuckets.has(bucket)) continue;
+    selected.push(fund);
+    usedBuckets.add(bucket);
+    if (selected.length === target) return selected;
+  }
+
+  // If there are not enough distinct categories, fill remaining slots by rank.
+  for (const fund of rankedFunds) {
+    if (selected.some(item => item.code === fund.code)) continue;
+    selected.push(fund);
+    if (selected.length === target) break;
+  }
+  return selected;
 }
 
 async function getRecommendationCandidates(profile) {
@@ -1943,24 +2000,7 @@ async function loadLoanFundSuggestions(input, plan) {
   if (!box) return;
   try {
     const profile = loanFreedomProfile(input, plan);
-    const candidates = await getRecommendationCandidates(profile);
-    const analysed = (await Promise.all(candidates.slice(0, 8).map(async candidate => {
-      try {
-        const analysis = await getAnalysedFund(candidate);
-        if (!analysis) return null;
-        analysis.profileFit = profileFitScore(analysis, profile);
-        analysis.finalRank = analysis.score + analysis.profileFit + returnPreferenceScore(analysis, profile.returnPref, profile);
-        return analysis;
-      } catch (_) {
-        return null;
-      }
-    }))).filter(Boolean);
-    const count = suggestedFundCount(input.sip, analysed.length);
-    const funds = analysed
-      .filter(fund => fund.latest && isRecentNav(fund.latest.date))
-      .sort((a, b) => b.finalRank - a.finalRank)
-      .slice(0, count);
-    if (!funds.length) throw new Error("MFapi did not return enough recent NAV history for this loan profile.");
+    const funds = await recommendFundsForProfile(profile, input.sip);
     box.innerHTML = renderLoanFundSuggestions(funds, profile, input, plan);
   } catch (error) {
     box.innerHTML = `
@@ -2119,24 +2159,7 @@ async function loadFreedomFundSuggestions(title, input, result) {
   if (!box) return;
   try {
     const profile = freedomGoalProfile(title, input, result);
-    const candidates = await getRecommendationCandidates(profile);
-    const analysed = (await Promise.all(candidates.slice(0, 8).map(async candidate => {
-      try {
-        const analysis = await getAnalysedFund(candidate);
-        if (!analysis) return null;
-        analysis.profileFit = profileFitScore(analysis, profile);
-        analysis.finalRank = analysis.score + analysis.profileFit + returnPreferenceScore(analysis, profile.returnPref, profile);
-        return analysis;
-      } catch (_) {
-        return null;
-      }
-    }))).filter(Boolean);
-    const count = suggestedFundCount(input.sip, analysed.length);
-    const funds = analysed
-      .filter(fund => fund.latest && isRecentNav(fund.latest.date))
-      .sort((a, b) => b.finalRank - a.finalRank)
-      .slice(0, count);
-    if (!funds.length) throw new Error("MFapi did not return enough NAV history for this goal profile.");
+    const funds = await recommendFundsForProfile(profile, input.sip);
     box.innerHTML = renderFreedomFundSuggestions(funds, profile, input);
   } catch (error) {
     box.innerHTML = `
@@ -2296,24 +2319,7 @@ async function loadSalaryFundSuggestions(input, plan) {
   els.runSalaryBtn.disabled = true;
   try {
     const profile = salaryPlannerProfile(input);
-    const candidates = await getRecommendationCandidates(profile);
-    const analysed = (await Promise.all(candidates.slice(0, 8).map(async candidate => {
-      try {
-        const analysis = await getAnalysedFund(candidate);
-        if (!analysis) return null;
-        analysis.profileFit = profileFitScore(analysis, profile);
-        analysis.finalRank = analysis.score + analysis.profileFit + returnPreferenceScore(analysis, profile.returnPref, profile);
-        return analysis;
-      } catch (_) {
-        return null;
-      }
-    }))).filter(Boolean);
-    const count = suggestedFundCount(plan.investable, analysed.length);
-    const funds = analysed
-      .filter(fund => fund.latest && isRecentNav(fund.latest.date))
-      .sort((a, b) => b.finalRank - a.finalRank)
-      .slice(0, count);
-    if (!funds.length) throw new Error("MFapi did not return enough NAV history for this salary profile.");
+    const funds = await recommendFundsForProfile(profile, plan.investable);
     box.innerHTML = renderSalaryFundSuggestions(funds, profile, plan);
   } catch (error) {
     box.innerHTML = `
