@@ -644,12 +644,12 @@ async function findFunds() {
     const profile = getProfile();
     const candidates = await getRecommendationCandidates(profile);
     if (!candidates.length) throw new Error("Could not find candidate funds for this profile.");
-    const analysed = (await Promise.all(candidates.slice(0, 8).map(async candidate => {
+    const analysed = (await Promise.all(candidates.slice(0, 16).map(async candidate => {
       try {
         const analysis = await getAnalysedFund(candidate);
         if (!analysis) return null;
         analysis.profileFit = profileFitScore(analysis, profile);
-        analysis.finalRank = analysis.score + analysis.profileFit + returnPreferenceScore(analysis, profile.returnPref);
+        analysis.finalRank = analysis.score + analysis.profileFit + returnPreferenceScore(analysis, profile.returnPref, profile);
         return analysis;
       } catch (_) {
         return null;
@@ -710,29 +710,81 @@ function scheduleIdle(callback, timeout = 1000) {
 }
 
 function recommendationQueries(profile) {
-  // Low-risk should prefer debt/liquid queries — avoid 'growth' keywords that surface equity
-  const low = ["liquid direct", "short duration debt direct", "ultra short direct", "short duration direct"];
-  const moderate = ["balanced advantage direct growth", "large cap direct growth", "index direct growth"];
-  const high = ["flexi cap direct growth", "mid cap direct growth", "large and mid cap direct growth"];
-  const veryHigh = ["small cap direct growth", "mid cap direct growth", "sectoral direct growth"];
-  let base = moderate;
-  if (profile.risk === "Low" || profile.duration.id === "1-3" || profile.goal === "emergency") base = low;
-  if (profile.risk === "High") base = high;
-  if (profile.risk === "Very High") base = veryHigh;
-  if (profile.duration.id === "3-5" && profile.risk !== "Low") base = ["balanced advantage direct growth", "hybrid direct growth", "large cap direct growth", "index direct growth"];
-  if (profile.duration.id === "10+" && profile.risk !== "Low") base = base.concat(["elss direct growth", "nifty 50 index direct growth"]);
-  if (profile.returnPref === "stable") {
-    base = ["balanced advantage direct growth", "large cap direct growth", "short duration direct growth", "corporate bond direct growth"].concat(base);
+  // V2 suitability-first model: horizon is the hard gate. Risk and return preference
+  // only change choices inside the universe that is suitable for that horizon.
+  const durationId = profile.duration?.id || "5-10";
+
+  // Emergency money should stay highly liquid regardless of risk/return preference.
+  if (profile.goal === "emergency") {
+    return [
+      "overnight fund direct growth",
+      "liquid fund direct growth",
+      "money market fund direct growth",
+      "ultra short duration fund direct growth"
+    ];
   }
-  if (profile.returnPref === "moderate") {
-    base = base.concat(["flexi cap direct growth", "nifty 50 index direct growth"]);
+
+  // 1-3 years: no pure-equity search, even for High / Very High risk.
+  if (durationId === "1-3") {
+    const base = [
+      "liquid fund direct growth",
+      "money market fund direct growth",
+      "ultra short duration fund direct growth",
+      "short duration debt fund direct growth"
+    ];
+    if (profile.risk === "High" || profile.risk === "Very High") {
+      base.push("corporate bond fund direct growth", "banking and psu debt fund direct growth");
+    }
+    return [...new Set(base)];
   }
-  if (profile.returnPref === "high" && profile.risk !== "Low" && profile.duration.id !== "1-3" && profile.goal !== "emergency") {
-    base = ["mid cap direct growth", "large and mid cap direct growth", "flexi cap direct growth", "small cap direct growth", "focused fund direct growth", "value fund direct growth"].concat(base);
+
+  // 3-5 years: keep pure high-beta equity out; use debt/hybrid/core large/index choices.
+  if (durationId === "3-5") {
+    let base = [
+      "short duration debt fund direct growth",
+      "corporate bond fund direct growth",
+      "banking and psu debt fund direct growth",
+      "balanced advantage fund direct growth"
+    ];
+    if (profile.risk === "Moderate") base.push("conservative hybrid fund direct growth", "large cap fund direct growth", "nifty 50 index fund direct growth");
+    if (profile.risk === "High" || profile.risk === "Very High") base.push("aggressive hybrid fund direct growth", "large cap fund direct growth", "nifty 50 index fund direct growth");
+    if (profile.goal === "travel" || profile.returnPref === "stable") {
+      base = ["short duration debt fund direct growth", "corporate bond fund direct growth", "balanced advantage fund direct growth"].concat(base);
+    }
+    return [...new Set(base)];
   }
-  if (profile.returnPref === "high" && (profile.risk === "Low" || profile.duration.id === "1-3" || profile.goal === "emergency")) {
-    base = ["balanced advantage direct growth", "large cap direct growth", "index direct growth"].concat(base);
+
+  // 5-10 years: diversified equity becomes acceptable; risk controls aggressiveness.
+  if (durationId === "5-10") {
+    let base;
+    if (profile.risk === "Low") {
+      base = ["balanced advantage fund direct growth", "aggressive hybrid fund direct growth", "nifty 50 index fund direct growth", "large cap fund direct growth"];
+    } else if (profile.risk === "Moderate") {
+      base = ["nifty 50 index fund direct growth", "large cap fund direct growth", "flexi cap fund direct growth", "balanced advantage fund direct growth"];
+    } else if (profile.risk === "High") {
+      base = ["flexi cap fund direct growth", "large and mid cap fund direct growth", "mid cap fund direct growth", "nifty 50 index fund direct growth"];
+    } else {
+      base = ["flexi cap fund direct growth", "mid cap fund direct growth", "large and mid cap fund direct growth", "small cap fund direct growth"];
+    }
+    if (profile.returnPref === "stable") base = ["balanced advantage fund direct growth", "nifty 50 index fund direct growth", "large cap fund direct growth"].concat(base);
+    if (profile.returnPref === "high" && profile.risk !== "Low") base = ["flexi cap fund direct growth", "large and mid cap fund direct growth", "mid cap fund direct growth"].concat(base);
+    return [...new Set(base)];
   }
+
+  // 10+ years: broad equity universe, still constrained by the selected risk level.
+  let base;
+  if (profile.risk === "Low") {
+    base = ["balanced advantage fund direct growth", "nifty 50 index fund direct growth", "large cap fund direct growth", "flexi cap fund direct growth"];
+  } else if (profile.risk === "Moderate") {
+    base = ["nifty 50 index fund direct growth", "large cap fund direct growth", "flexi cap fund direct growth", "large and mid cap fund direct growth"];
+  } else if (profile.risk === "High") {
+    base = ["flexi cap fund direct growth", "large and mid cap fund direct growth", "mid cap fund direct growth", "nifty 50 index fund direct growth", "value fund direct growth"];
+  } else {
+    base = ["flexi cap fund direct growth", "mid cap fund direct growth", "small cap fund direct growth", "large and mid cap fund direct growth", "value fund direct growth"];
+  }
+  base.push("elss direct growth", "nifty 50 index fund direct growth");
+  if (profile.returnPref === "stable") base = ["nifty 50 index fund direct growth", "large cap fund direct growth", "balanced advantage fund direct growth"].concat(base);
+  if (profile.returnPref === "high" && profile.risk !== "Low") base = ["flexi cap fund direct growth", "mid cap fund direct growth", "large and mid cap fund direct growth"].concat(base);
   return [...new Set(base)];
 }
 
@@ -773,99 +825,181 @@ async function getRecommendationCandidates(profile) {
   const covered = ensureProfileCoverage(scoredFunds, profile);
 
   // Limit and return
-  return covered.slice(0, 12);
+  return covered.slice(0, 24);
 }
 
-function profileFitScore(fund, profile) {
-  const category = `${fund.category} ${fund.type} ${fund.name}`.toLowerCase();
-  let fit = 0;
-  if (/direct/i.test(fund.name)) fit += 4;
-  if (/growth/i.test(fund.name)) fit += 3;
-  if (profile.risk === "Low" && /liquid|overnight|short|corporate|debt|money market|ultra short/.test(category)) fit += 16;
-  if (profile.risk === "Moderate" && /hybrid|balanced|large cap|index|elss|flexi/.test(category)) fit += 13;
-  if (profile.risk === "High" && /flexi|large & mid|large and mid|mid cap|value|equity/.test(category)) fit += 13;
-  if (profile.risk === "Very High" && /small cap|mid cap|sector|thematic|equity/.test(category)) fit += 13;
-  if (profile.duration.id === "1-3" && /liquid|short|debt|corporate|overnight/.test(category)) fit += 10;
-  if ((profile.duration.id === "5-10" || profile.duration.id === "10+") && /equity|index|flexi|cap|elss/.test(category)) fit += 10;
-  if (profile.goal === "emergency" && /liquid|overnight|short/.test(category)) fit += 14;
-  return fit;
+function fundCategoryText(fund) {
+  return `${fund.schemeName || fund.name || ""} ${fund.schemeCategory || fund.category || ""} ${fund.type || ""}`.toLowerCase();
 }
 
-function returnPreferenceScore(fund, preference) {
-  const category = `${fund.category} ${fund.type} ${fund.name}`.toLowerCase();
-  const longReturn = firstNumber(fund.returns.y10, fund.returns.y5, fund.returns.y3, fund.returns.y1);
-  if (preference === "stable") {
-    const categoryBonus = /liquid|short|debt|corporate|balanced|large cap|index/.test(category) ? 12 : 0;
-    const categoryPenalty = /small cap|sector|thematic/.test(category) ? 14 : 0;
-    return (1 - scale(fund.volatility, 0.04, 0.24)) * 24 + (1 - scale(Math.abs(fund.maxDrawdown || 0), 0.03, 0.45)) * 16 + categoryBonus - categoryPenalty;
+function isPureEquityCategory(text) {
+  return /small cap|mid cap|large & mid|large and mid|flexi|focused|value|contra|sector|thematic|elss|equity/.test(text);
+}
+
+function isShortDebtCategory(text) {
+  return /overnight|liquid|money market|ultra short|short duration|short term|corporate bond|banking.*psu|banking and psu|debt/.test(text);
+}
+
+function isCoreEquityCategory(text) {
+  return /nifty|sensex|index|large cap|flexi cap/.test(text);
+}
+
+function isHybridCategory(text) {
+  return /balanced advantage|dynamic asset|hybrid|multi asset/.test(text);
+}
+
+function suitabilityAllowsFund(fund, profile) {
+  const text = fundCategoryText(fund);
+  const durationId = profile.duration?.id || "5-10";
+
+  if (/idcw|dividend|bonus|reinvestment/.test(text)) return false;
+
+  // Emergency corpus: liquidity first. Do not allow equity/hybrid categories.
+  if (profile.goal === "emergency") {
+    return /overnight|liquid|money market|ultra short/.test(text);
   }
-  if (preference === "high") {
-    const growthBonus = /small cap|mid cap|large & mid|large and mid|flexi|focused|value|equity/.test(category) ? 18 : 0;
-    const defensivePenalty = /liquid|overnight|short|corporate|debt|money market/.test(category) ? 22 : 0;
-    return scale(longReturn, 0.04, 0.24) * 34 + scale(fund.returns.y3, 0.04, 0.22) * 16 + growthBonus - defensivePenalty;
+
+  // Hard horizon gate: pure equity is not suitable for a 1-3 year goal in this finder.
+  if (durationId === "1-3") {
+    return isShortDebtCategory(text) && !isPureEquityCategory(text) && !isHybridCategory(text);
   }
-  const moderateBonus = /balanced|large cap|index|flexi|elss/.test(category) ? 10 : 0;
-  const highRiskPenalty = /small cap|sector|thematic/.test(category) ? 10 : 0;
-  return scale(longReturn, 0.02, 0.18) * 14 + (1 - scale(fund.volatility, 0.04, 0.24)) * 12 + moderateBonus - highRiskPenalty;
+
+  // 3-5 years: avoid high-beta pure equity. Permit debt, hybrid and core large/index exposure.
+  if (durationId === "3-5") {
+    if (/small cap|mid cap|large & mid|large and mid|sector|thematic|focused|value|contra/.test(text)) return false;
+    if (profile.goal === "travel" && isPureEquityCategory(text) && !/index|large cap/.test(text)) return false;
+    return isShortDebtCategory(text) || isHybridCategory(text) || /large cap|index|nifty|sensex/.test(text);
+  }
+
+  // 5-10 years: equity is allowed, but Low risk excludes aggressive categories.
+  if (durationId === "5-10") {
+    if (profile.risk === "Low" && /small cap|mid cap|large & mid|large and mid|sector|thematic/.test(text)) return false;
+    if (profile.risk === "Moderate" && /sector|thematic/.test(text)) return false;
+    return true;
+  }
+
+  // 10+ years: broad universe; Low risk still excludes high-beta categories.
+  if (profile.risk === "Low" && /small cap|mid cap|sector|thematic/.test(text)) return false;
+  if (profile.risk === "Moderate" && /sector|thematic/.test(text)) return false;
+  return true;
 }
 
-// Quick, cheap text-match score to bias candidate ordering before full analysis.
-function quickProfileMatchScore(fund, profile) {
-  const text = `${fund.schemeName || fund.name || ""} ${fund.schemeCategory || fund.category || ""}`.toLowerCase();
+function goalFitScore(fund, profile) {
+  const text = fundCategoryText(fund);
   let score = 0;
-  // preference by direct/growth naming
-  if (/direct/.test(text)) score += 3;
-  if (/growth/.test(text)) score += 2;
-
-  // risk-based keywords
-  if (profile.risk === "Low") score += (/liquid|overnight|short|corporate|debt|money market|ultra short|gilt|g-sec/.test(text) ? 8 : 0);
-  if (profile.risk === "Moderate") score += (/hybrid|balanced|large cap|index|elss|flexi/.test(text) ? 5 : 0);
-  if (profile.risk === "High") score += (/flexi|large and mid|large & mid|mid cap|value|equity|mid-cap/.test(text) ? 6 : 0);
-  if (profile.risk === "Very High") score += (/small cap|sector|thematic|mid cap|small-cap/.test(text) ? 7 : 0);
-
-  // return preference
-  if (profile.returnPref === "stable") score += (/liquid|short|debt|corporate|balanced|large cap|index|gilt|g-sec/.test(text) ? 6 : 0);
-  if (profile.returnPref === "high") score += (/small cap|mid cap|flexi|focused|value|sector|thematic/.test(text) ? 6 : 0);
-
-  // duration hints
-  if (profile.duration && (profile.duration.id === "1-3")) score += (/short|liquid|overnight/.test(text) ? 3 : 0);
-  if (profile.duration && (profile.duration.id === "10+")) score += (/elss|nifty|index|large cap/.test(text) ? 3 : 0);
-
+  if (profile.goal === "emergency") return /overnight|liquid/.test(text) ? 24 : /money market|ultra short/.test(text) ? 18 : 0;
+  if (profile.goal === "travel") {
+    if (/liquid|money market|ultra short|short duration|corporate bond/.test(text)) score += 14;
+    if (isHybridCategory(text)) score += 6;
+  }
+  if (profile.goal === "house") {
+    if (/short duration|corporate bond|balanced advantage|index|large cap/.test(text)) score += 10;
+  }
+  if (profile.goal === "education") {
+    if (/balanced advantage|index|large cap|flexi/.test(text)) score += 10;
+  }
+  if (profile.goal === "retirement") {
+    if (/index|large cap|flexi|balanced advantage/.test(text)) score += 12;
+  }
+  if (profile.goal === "wealth") {
+    if (/index|flexi|large & mid|large and mid|mid cap|large cap/.test(text)) score += 10;
+  }
   return score;
 }
 
-// Infer risk bucket from text for raw candidates (before full analysis)
-function textRiskLabel(candidate) {
-  const text = `${candidate.schemeName || candidate.name || ""} ${(candidate.schemeCategory || candidate.category || "").toLowerCase()}`.toLowerCase();
-  if (/liquid|overnight|money market|short duration|ultra short|corporate bond|corporate|debt|gilt|g-sec/.test(text)) return "Low";
-  if (/balanced|hybrid|large cap|index|debt/.test(text)) return "Moderate";
-  if (/mid cap|flexi|large and mid|large & mid|equity/.test(text)) return "High";
-  if (/small cap|sector|thematic/.test(text)) return "Very High";
-  return "Moderate"; // default fallback
+function profileFitScore(fund, profile) {
+  const category = fundCategoryText(fund);
+  let fit = goalFitScore(fund, profile);
+  if (/direct/.test(category)) fit += 4;
+  if (/growth/.test(category)) fit += 3;
+
+  // Duration is intentionally weighted more heavily than risk.
+  if (profile.duration.id === "1-3" && /overnight|liquid|money market|ultra short|short duration|corporate bond/.test(category)) fit += 24;
+  if (profile.duration.id === "3-5" && /short duration|corporate bond|banking.*psu|balanced advantage|hybrid|large cap|index/.test(category)) fit += 18;
+  if (profile.duration.id === "5-10" && /balanced|hybrid|large cap|index|flexi|large & mid|large and mid|mid cap/.test(category)) fit += 15;
+  if (profile.duration.id === "10+" && /equity|index|flexi|cap|elss|value/.test(category)) fit += 16;
+
+  if (profile.risk === "Low" && /overnight|liquid|money market|short duration|corporate bond|balanced advantage|index|large cap/.test(category)) fit += 12;
+  if (profile.risk === "Moderate" && /balanced|hybrid|large cap|index|flexi/.test(category)) fit += 12;
+  if (profile.risk === "High" && /flexi|large & mid|large and mid|mid cap|value|equity/.test(category)) fit += 12;
+  if (profile.risk === "Very High" && /small cap|mid cap|large & mid|large and mid|flexi/.test(category)) fit += 12;
+  return fit;
 }
 
-// Ensure candidate list has reasonable coverage for the profile (prefer correct buckets)
+function returnPreferenceScore(fund, preference, profile = null) {
+  const category = fundCategoryText(fund);
+  const longReturn = firstNumber(fund.returns?.y10, fund.returns?.y5, fund.returns?.y3, fund.returns?.y1);
+  const shortHorizon = profile && (profile.duration?.id === "1-3" || profile.goal === "emergency");
+
+  // Return preference is only a tie-breaker. It can never unlock an unsuitable category.
+  if (preference === "stable") {
+    const categoryBonus = /liquid|short|debt|corporate|balanced|large cap|index/.test(category) ? 8 : 0;
+    return (1 - scale(fund.volatility, 0.04, 0.24)) * 16 + (1 - scale(Math.abs(fund.maxDrawdown || 0), 0.03, 0.45)) * 12 + categoryBonus;
+  }
+  if (preference === "high") {
+    if (shortHorizon) {
+      return scale(longReturn, 0.03, 0.10) * 10 + (1 - scale(fund.volatility, 0.02, 0.14)) * 6;
+    }
+    const growthBonus = /mid cap|large & mid|large and mid|flexi|small cap|value|equity/.test(category) ? 10 : 0;
+    return scale(longReturn, 0.04, 0.24) * 20 + scale(fund.returns?.y3, 0.04, 0.22) * 8 + growthBonus;
+  }
+  const moderateBonus = /balanced|large cap|index|flexi/.test(category) ? 7 : 0;
+  return scale(longReturn, 0.02, 0.18) * 10 + (1 - scale(fund.volatility, 0.04, 0.24)) * 9 + moderateBonus;
+}
+
+// Cheap candidate-ordering score. Suitability is checked before heavy NAV analysis.
+function quickProfileMatchScore(fund, profile) {
+  const text = fundCategoryText(fund);
+  if (!suitabilityAllowsFund(fund, profile)) return -1000;
+  let score = 0;
+  if (/direct/.test(text)) score += 4;
+  if (/growth/.test(text)) score += 3;
+  score += goalFitScore(fund, profile);
+
+  if (profile.duration.id === "1-3") score += /overnight|liquid|money market|ultra short|short duration|corporate bond/.test(text) ? 20 : 0;
+  if (profile.duration.id === "3-5") score += /short duration|corporate bond|balanced advantage|hybrid|large cap|index/.test(text) ? 14 : 0;
+  if (profile.duration.id === "5-10") score += /balanced|index|large cap|flexi|large & mid|large and mid|mid cap/.test(text) ? 10 : 0;
+  if (profile.duration.id === "10+") score += /index|large cap|flexi|large & mid|large and mid|mid cap|small cap|elss/.test(text) ? 10 : 0;
+
+  if (profile.risk === "Low") score += /liquid|short|debt|corporate|balanced|large cap|index/.test(text) ? 8 : 0;
+  if (profile.risk === "Moderate") score += /hybrid|balanced|large cap|index|flexi/.test(text) ? 7 : 0;
+  if (profile.risk === "High") score += /flexi|large and mid|large & mid|mid cap|value|equity/.test(text) ? 7 : 0;
+  if (profile.risk === "Very High") score += /small cap|mid cap|large and mid|large & mid|flexi/.test(text) ? 7 : 0;
+  return score;
+}
+
+function textRiskLabel(candidate) {
+  const text = fundCategoryText(candidate);
+  if (/overnight|liquid|money market|short duration|ultra short|corporate bond|banking.*psu|gilt|g-sec|debt/.test(text)) return "Low";
+  if (/balanced|hybrid|large cap|index|nifty|sensex/.test(text)) return "Moderate";
+  if (/mid cap|flexi|large and mid|large & mid|equity|elss|value|contra/.test(text)) return "High";
+  if (/small cap|sector|thematic/.test(text)) return "Very High";
+  return "Moderate";
+}
+
 function ensureProfileCoverage(candidates, profile) {
+  // First remove categories that fail the horizon/goal hard gate.
+  const suitable = candidates.filter(c => suitabilityAllowsFund(c, profile));
   const buckets = { Low: [], Moderate: [], High: [], "Very High": [] };
-  for (const c of candidates) buckets[textRiskLabel(c)].push(c);
+  for (const c of suitable) buckets[textRiskLabel(c)].push(c);
 
   const ordered = [];
-  // preference order based on profile.risk and returnPref
-  if (profile.risk === "Low" || profile.returnPref === "stable") {
+  if (profile.duration.id === "1-3" || profile.goal === "emergency") {
+    ordered.push(...buckets.Low, ...buckets.Moderate);
+  } else if (profile.risk === "Low" || profile.returnPref === "stable") {
     ordered.push(...buckets.Low, ...buckets.Moderate, ...buckets.High, ...buckets["Very High"]);
   } else if (profile.risk === "Moderate") {
     ordered.push(...buckets.Moderate, ...buckets.Low, ...buckets.High, ...buckets["Very High"]);
-  } else if (profile.risk === "High" || profile.returnPref === "high") {
-    ordered.push(...buckets.High, ...buckets["Very High"], ...buckets.Moderate, ...buckets.Low);
+  } else if (profile.risk === "High") {
+    ordered.push(...buckets.High, ...buckets.Moderate, ...buckets["Very High"], ...buckets.Low);
   } else {
-    ordered.push(...candidates);
+    ordered.push(...buckets["Very High"], ...buckets.High, ...buckets.Moderate, ...buckets.Low);
   }
 
-  // Deduplicate while preserving order, prefer unique family keys
   const final = [];
   const seen = new Set();
   for (const fund of ordered) {
-    const family = (fund.schemeName || "").toLowerCase().replace(/\b(direct|regular|growth|plan|option)\b/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+    const family = (fund.schemeName || fund.name || "").toLowerCase().replace(/\b(direct|regular|growth|plan|option)\b/g, "").replace(/[^a-z0-9]+/g, " ").trim();
     if (!seen.has(family)) {
       final.push(fund);
       seen.add(family);
@@ -874,38 +1008,24 @@ function ensureProfileCoverage(candidates, profile) {
   return final;
 }
 
-// After analysis, enforce stricter profile-aligned filtering. Returns funds matching stricter criteria.
 function strictRecommendationFilter(analysedFunds, profile) {
   if (!Array.isArray(analysedFunds) || analysedFunds.length === 0) return [];
-  const filtered = analysedFunds.filter(fund => {
-    const text = `${fund.category || ""} ${fund.type || ""} ${fund.name || ""}`.toLowerCase();
-    const textRisk = textRiskLabel(fund);
-    const longReturn = firstNumber(fund.returns && (fund.returns.y10 || fund.returns.y5 || fund.returns.y3 || fund.returns.y1));
-    // Base rejects for obviously mismatched categories
-    if (profile.risk === "Low") {
-      // prefer Low/Moderate buckets, exclude small-cap/sector/thematic
-      if (/small cap|sector|thematic/.test(text)) return false;
-      if (textRisk === "Very High" || textRisk === "High") return false;
-      // prefer low volatility when stable preference
-      if (profile.returnPref === "stable" && fund.volatility != null && fund.volatility > 0.18) return false;
+  return analysedFunds.filter(fund => {
+    if (!suitabilityAllowsFund(fund, profile)) return false;
+    const text = fundCategoryText(fund);
+    const risk = textRiskLabel(fund);
+
+    // Stable preference gets an additional historical-risk check.
+    if (profile.returnPref === "stable" && fund.volatility != null) {
+      const maxVol = profile.duration.id === "1-3" ? 0.12 : profile.duration.id === "3-5" ? 0.18 : 0.22;
+      if (fund.volatility > maxVol) return false;
     }
-    if (profile.risk === "Moderate") {
-      // allow Moderate or Low; deprioritize Very High
-      if (textRisk === "Very High") return false;
-    }
-    if (profile.risk === "High" || profile.returnPref === "high") {
-      // allow High/Very High; require reasonable long-term return if category ambiguous
-      if (textRisk === "Low" && (longReturn == null || longReturn < 0.04)) return false;
-    }
-    // duration-based constraints
-    if (profile.duration && profile.duration.id === "1-3") {
-      if (!/liquid|overnight|short|debt|ultra short|short duration/.test(text) && profile.risk !== "High") return false;
-    }
-    // If stable return pref, avoid high-volatility funds
-    if (profile.returnPref === "stable" && fund.volatility != null && fund.volatility > 0.20) return false;
+
+    // Keep Low-risk profiles out of aggressive categories even at long horizons.
+    if (profile.risk === "Low" && (risk === "High" || risk === "Very High") && !/index|large cap|balanced/.test(text)) return false;
+    if (profile.risk === "Moderate" && /sector|thematic/.test(text)) return false;
     return true;
   });
-  return filtered;
 }
 
 function renderRecommendations(funds, profile, amount) {
@@ -920,7 +1040,7 @@ function renderRecommendations(funds, profile, amount) {
         <p class="section-copy">${escapeHTML(goal ? goal.title : "Your goal")} • ${escapeHTML(profile.duration.label)} • ${escapeHTML(profile.risk)} risk • ${escapeHTML(returnPreferenceLabel(profile.returnPref))} • ${escapeHTML(INR.format(amount))}/month</p>
       </div>
     </div>
-    <div class="notice">Based on your selected goal, time horizon, risk level, and return preference, here are funds whose category and historical NAV behavior match your filters. This is not investment advice and does not predict future returns.</div>
+    <div class="notice">Suitability-first analysis: time horizon is the hard gate, then goal and risk, while return preference only fine-tunes ranking. Funds below also passed historical NAV checks. This is educational analysis, not investment advice.</div>
     ${renderStudyMix(displayWeights, amount)}
     ${renderPeriodComparison(displayFunds)}
     <div class="results-grid">
@@ -1408,12 +1528,12 @@ function fundScore(metrics) {
 
 function whyMatches(fund, profile) {
   const bits = [];
-  if (/direct/i.test(fund.name)) bits.push("it appears to be a Direct plan");
-  if (/growth/i.test(fund.name)) bits.push("it appears to be Growth option");
-  if (fund.returns.y5 != null || fund.returns.y10 != null) bits.push("it has usable long-term NAV history");
+  bits.push(`${profile.duration.label} horizon suitability`);
+  if (profile.goal === "emergency") bits.push("liquidity-first emergency-fund fit");
+  else bits.push(`${(goals.find(g => g.id === profile.goal)?.title || profile.goal).toLowerCase()} goal fit`);
+  bits.push(`${profile.risk.toLowerCase()} risk fit`);
   if (fund.volatility != null) bits.push(`${riskLabel(fund).toLowerCase()} historical volatility`);
-  bits.push(`its category/name fits a ${profile.risk.toLowerCase()} risk, ${profile.duration.label} shortlist`);
-  bits.push(`${returnPreferenceLabel(profile.returnPref).toLowerCase()} preference`);
+  if (fund.returns.y5 != null || fund.returns.y10 != null) bits.push("usable long-term NAV history");
   return "Why it matches: " + bits.slice(0, 4).join(", ") + ".";
 }
 
@@ -1829,7 +1949,7 @@ async function loadLoanFundSuggestions(input, plan) {
         const analysis = await getAnalysedFund(candidate);
         if (!analysis) return null;
         analysis.profileFit = profileFitScore(analysis, profile);
-        analysis.finalRank = analysis.score + analysis.profileFit + returnPreferenceScore(analysis, profile.returnPref);
+        analysis.finalRank = analysis.score + analysis.profileFit + returnPreferenceScore(analysis, profile.returnPref, profile);
         return analysis;
       } catch (_) {
         return null;
@@ -2005,7 +2125,7 @@ async function loadFreedomFundSuggestions(title, input, result) {
         const analysis = await getAnalysedFund(candidate);
         if (!analysis) return null;
         analysis.profileFit = profileFitScore(analysis, profile);
-        analysis.finalRank = analysis.score + analysis.profileFit + returnPreferenceScore(analysis, profile.returnPref);
+        analysis.finalRank = analysis.score + analysis.profileFit + returnPreferenceScore(analysis, profile.returnPref, profile);
         return analysis;
       } catch (_) {
         return null;
@@ -2182,7 +2302,7 @@ async function loadSalaryFundSuggestions(input, plan) {
         const analysis = await getAnalysedFund(candidate);
         if (!analysis) return null;
         analysis.profileFit = profileFitScore(analysis, profile);
-        analysis.finalRank = analysis.score + analysis.profileFit + returnPreferenceScore(analysis, profile.returnPref);
+        analysis.finalRank = analysis.score + analysis.profileFit + returnPreferenceScore(analysis, profile.returnPref, profile);
         return analysis;
       } catch (_) {
         return null;
