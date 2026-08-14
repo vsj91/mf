@@ -1343,6 +1343,22 @@ tr:last-child td { border-bottom: 0; }
     background: rgba(53, 212, 154, .13);
     color: #c8f7e4;
   }
+  .past-sip {
+    background: linear-gradient(180deg, rgba(53, 212, 154, .16), rgba(18, 184, 134, .08));
+    border-color: rgba(53, 212, 154, .26);
+  }
+  .past-sip-head small,
+  .past-sip-foot span {
+    color: #9ef0ce;
+  }
+  .past-sip-head span,
+  .past-sip strong,
+  .past-sip-foot span:last-child {
+    color: #e8fff5;
+  }
+  .past-sip-foot {
+    border-top-color: rgba(158, 240, 206, .18);
+  }
   .pill {
     background: rgba(255, 209, 102, .15);
     color: #ffe1a3;
