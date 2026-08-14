@@ -814,6 +814,11 @@ function strictRecommendationFilter(analysedFunds, profile) {
     if (profile.risk === "Low") {
       // prefer Low/Moderate buckets, exclude small-cap/sector/thematic
       if (/small cap|sector|thematic/.test(text)) return false;
+
+      // If fund is debt/liquid or IDCW-like, ensure it's active (recent NAV)
+      const isDebtLikeText = /liquid|overnight|money market|short duration|ultra short|corporate|debt|gilt|g-sec/.test(text) || /idcw|dividend|payout/.test(text);
+      if (isDebtLikeText && fund.latest && !isRecentNav(fund.latest.date)) return false;
+
       // Allow 'High' bucket candidates if their text/category indicates debt/liquid or they have low volatility
       if (textRisk === "Very High") return false;
       if (textRisk === "High") {
