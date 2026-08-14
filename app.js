@@ -518,7 +518,12 @@ async function findFunds() {
         return null;
       }
     }))).filter(Boolean);
-    const results = analysed
+
+    // Apply strict profile-based filtering to favour matching funds for risk/duration/return
+    const filteredByProfile = strictRecommendationFilter(analysed, profile);
+    const sourceList = filteredByProfile.length ? filteredByProfile : analysed;
+
+    const results = sourceList
       .filter(fund => fund.latest && isRecentNav(fund.latest.date))
       .sort((a, b) => b.finalRank - a.finalRank)
       .slice(0, 3);
@@ -717,6 +722,40 @@ function ensureProfileCoverage(candidates, profile) {
     }
   }
   return final;
+}
+
+// After analysis, enforce stricter profile-aligned filtering. Returns funds matching stricter criteria.
+function strictRecommendationFilter(analysedFunds, profile) {
+  if (!Array.isArray(analysedFunds) || analysedFunds.length === 0) return [];
+  const filtered = analysedFunds.filter(fund => {
+    const text = `${fund.category || ""} ${fund.type || ""} ${fund.name || ""}`.toLowerCase();
+    const textRisk = textRiskLabel(fund);
+    const longReturn = firstNumber(fund.returns && (fund.returns.y10 || fund.returns.y5 || fund.returns.y3 || fund.returns.y1));
+    // Base rejects for obviously mismatched categories
+    if (profile.risk === "Low") {
+      // prefer Low/Moderate buckets, exclude small-cap/sector/thematic
+      if (/small cap|sector|thematic/.test(text)) return false;
+      if (textRisk === "Very High" || textRisk === "High") return false;
+      // prefer low volatility when stable preference
+      if (profile.returnPref === "stable" && fund.volatility != null && fund.volatility > 0.18) return false;
+    }
+    if (profile.risk === "Moderate") {
+      // allow Moderate or Low; deprioritize Very High
+      if (textRisk === "Very High") return false;
+    }
+    if (profile.risk === "High" || profile.returnPref === "high") {
+      // allow High/Very High; require reasonable long-term return if category ambiguous
+      if (textRisk === "Low" && (longReturn == null || longReturn < 0.04)) return false;
+    }
+    // duration-based constraints
+    if (profile.duration && profile.duration.id === "1-3") {
+      if (!/liquid|overnight|short|debt|ultra short|short duration/.test(text) && profile.risk !== "High") return false;
+    }
+    // If stable return pref, avoid high-volatility funds
+    if (profile.returnPref === "stable" && fund.volatility != null && fund.volatility > 0.20) return false;
+    return true;
+  });
+  return filtered;
 }
 
 function renderRecommendations(funds, profile, amount) {
