@@ -5,6 +5,11 @@ const API_BASE = "https://api.mfapi.in/mf";
 const SEARCH_TTL = 1000 * 60 * 60 * 24 * 30;
 const DETAIL_TTL = 1000 * 60 * 60 * 24 * 7;
 const ANALYSIS_TTL = 1000 * 60 * 60 * 24 * 7;
+// Active/stale cutoffs and history thresholds
+const ACTIVE_CUTOFF_DAYS = 180; // considered active within 180 days
+const SEVERE_STALE_DAYS = 730;   // treat NAV older than this as severely stale
+const MIN_HISTORY_ROWS = 250;    // default minimum rows for analysis
+const MIN_DEBT_HISTORY_ROWS = 90; // allow shorter history for debt/liquid schemes
 const INR = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 const PCT = new Intl.NumberFormat("en-IN", { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
@@ -377,7 +382,11 @@ async function getAnalysedFund(candidate) {
   const cached = readCache(cacheKey, ANALYSIS_TTL);
   if (cached) return hydrateAnalysis(cached);
   const detail = await getFundDetails(candidate.schemeCode);
-  if (detail.history.length < 250) return null;
+  // Determine minimum history rows — allow shorter histories for debt/liquid schemes
+  const nameText = `${candidate.schemeName || candidate.name || ""}`.toLowerCase();
+  const isDebtLikeCandidate = /liquid|overnight|money market|short|ultra short|corporate|debt|gilt|g-sec/.test(nameText) || /idcw|dividend|payout/.test(nameText);
+  const minRows = isDebtLikeCandidate ? MIN_DEBT_HISTORY_ROWS : MIN_HISTORY_ROWS;
+  if (detail.history.length < minRows) return null;
   const analysis = analyseFund(candidate, detail);
   const light = stripAnalysisForCache(analysis);
   writeCache(cacheKey, light);
@@ -815,16 +824,23 @@ function strictRecommendationFilter(analysedFunds, profile) {
       // prefer Low/Moderate buckets, exclude small-cap/sector/thematic
       if (/small cap|sector|thematic/.test(text)) return false;
 
-      // If fund is debt/liquid or IDCW-like, ensure it's active (recent NAV)
+      // Debt-like funds should not be discarded lightly. Use active-first strategy: prefer active funds, but allow older NAV if necessary.
       const isDebtLikeText = /liquid|overnight|money market|short duration|ultra short|corporate|debt|gilt|g-sec/.test(text) || /idcw|dividend|payout/.test(text);
-      if (isDebtLikeText && fund.latest && !isRecentNav(fund.latest.date)) return false;
+      if (isDebtLikeText) {
+        // If fund has no NAV or is severely stale, reject.
+        if (!fund.latest) return false;
+        const ageDays = fund.latest ? (Date.now() - fund.latest.date.getTime()) / (24 * 60 * 60 * 1000) : Infinity;
+        if (ageDays > SEVERE_STALE_DAYS) return false;
+        // Allow older NAVs up to SEVERE_STALE_DAYS; prefer active ones in selection ordering later.
+      }
 
-      // Allow 'High' bucket candidates if their text/category indicates debt/liquid or they have low volatility
+      // Allow 'High' bucket candidates only if they are debt-like or show low volatility
       if (textRisk === "Very High") return false;
       if (textRisk === "High") {
         const isDebtLike = /debt|liquid|ultra short|short duration|corporate|gilt|g-sec|overnight|money market/.test(text);
         if (!isDebtLike && (fund.volatility == null || fund.volatility > 0.22)) return false;
       }
+
       // prefer low volatility when stable preference — relaxed threshold
       if (profile.returnPref === "stable" && fund.volatility != null && fund.volatility > 0.24) return false;
     }
@@ -1092,8 +1108,8 @@ function riskPenaltyForMix(fund) {
 function isRecentNav(date) {
   if (!(date instanceof Date)) return false;
   const ageDays = (Date.now() - date.getTime()) / (24 * 60 * 60 * 1000);
-  // Active-fund cutoff: consider NAVs updated within the last 180 days as active
-  return ageDays <= 180;
+  // Active-fund cutoff: consider NAVs updated within the last ACTIVE_CUTOFF_DAYS as active
+  return ageDays <= ACTIVE_CUTOFF_DAYS;
 }
 
 function renderFundCard(fund, profile, best) {
@@ -1106,6 +1122,7 @@ function renderFundCard(fund, profile, best) {
           <div class="quick-label">
             ${best ? `<span class="pill">Closest study match</span>` : ""}
             <span class="pill">Risk: ${escapeHTML(riskLabel(fund))}</span>
+            ${fund.latest && !isRecentNav(fund.latest.date) ? `<span class="pill stale">Stale NAV ${escapeHTML(formatDate(fund.latest.date))}</span>` : ""}
           </div>
         </div>
         <div class="score-ring" style="--p:${fund.score}"><span>${fund.score}</span></div>
