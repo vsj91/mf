@@ -526,7 +526,7 @@ async function findFunds() {
     const sourceList = filteredByProfile.length ? filteredByProfile : analysed;
 
     const results = sourceList
-      .filter(fund => fund.latest)
+      .filter(fund => fund.latest && isRecentNav(fund.latest.date))
       .sort((a, b) => b.finalRank - a.finalRank)
       .slice(0, 3);
     if (!results.length) throw new Error("MFapi returned insufficient recent NAV history for the shortlisted funds. Try a different risk or duration.");
@@ -918,7 +918,7 @@ async function loadMostInvestedStudyFunds(excludeCodes) {
         return null;
       }
     }))).filter(Boolean)
-      .filter(fund => fund.latest)
+      .filter(fund => fund.latest && isRecentNav(fund.latest.date))
       .sort((a, b) => b.popularStudyRank - a.popularStudyRank)
       .slice(0, 4);
     box.innerHTML = renderMostInvestedStudyFunds(analysed);
@@ -1087,8 +1087,8 @@ function riskPenaltyForMix(fund) {
 function isRecentNav(date) {
   if (!(date instanceof Date)) return false;
   const ageDays = (Date.now() - date.getTime()) / (24 * 60 * 60 * 1000);
-  // Relaxed cutoff to 365 days so funds with slightly older NAVs are still considered
-  return ageDays <= 365;
+  // Active-fund cutoff: consider NAVs updated within the last 180 days as active
+  return ageDays <= 180;
 }
 
 function renderFundCard(fund, profile, best) {
@@ -1740,10 +1740,10 @@ async function loadLoanFundSuggestions(input, plan) {
     }))).filter(Boolean);
     const count = suggestedFundCount(input.sip, analysed.length);
     const funds = analysed
-      .filter(fund => fund.latest)
+      .filter(fund => fund.latest && isRecentNav(fund.latest.date))
       .sort((a, b) => b.finalRank - a.finalRank)
       .slice(0, count);
-    if (!funds.length) throw new Error("MFapi did not return any analysable funds for this loan profile.");
+    if (!funds.length) throw new Error("MFapi did not return enough recent NAV history for this loan profile.");
     box.innerHTML = renderLoanFundSuggestions(funds, profile, input, plan);
   } catch (error) {
     box.innerHTML = `
@@ -1916,10 +1916,10 @@ async function loadFreedomFundSuggestions(title, input, result) {
     }))).filter(Boolean);
     const count = suggestedFundCount(input.sip, analysed.length);
     const funds = analysed
-      .filter(fund => fund.latest)
+      .filter(fund => fund.latest && isRecentNav(fund.latest.date))
       .sort((a, b) => b.finalRank - a.finalRank)
       .slice(0, count);
-    if (!funds.length) throw new Error("MFapi did not return any analysable funds for this goal profile.");
+    if (!funds.length) throw new Error("MFapi did not return enough NAV history for this goal profile.");
     box.innerHTML = renderFreedomFundSuggestions(funds, profile, input);
   } catch (error) {
     box.innerHTML = `
