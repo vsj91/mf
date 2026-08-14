@@ -56,7 +56,70 @@ const state = {
   language: localStorage.getItem("ffi_language") || "en",
   sipSelected: [],
   compareSelected: [],
-  lastRecommendations: []
+  lastRecommendations: [],
+  helpTool: "find",
+  helpStep: 0
+};
+
+const helpGuides = {
+  find: {
+    label: "Find Funds",
+    tab: "find",
+    steps: [
+      { target: "#goalSelect", title: "Choose your goal", copy: "Pick what the money is for, such as wealth, retirement, house, education, travel, or emergency fund." },
+      { target: "#monthlyAmount", title: "Enter monthly amount", copy: "Add the amount you are thinking of investing every month. This also controls how many funds are shown." },
+      { target: "#durationChoices", title: "Set duration", copy: "Choose how long the money can stay invested. Short timelines usually need steadier categories." },
+      { target: "#riskChoices", title: "Choose risk comfort", copy: "Select the level of ups and downs you can emotionally handle." },
+      { target: "#findFundsBtn", title: "Study the shortlist", copy: "Press Study Funds to see fund matches, historical returns, score, and past SIP replay." }
+    ]
+  },
+  sipcalc: {
+    label: "SIP Calculator",
+    tab: "sipcalc",
+    steps: [
+      { target: "#sipCalcAmount", title: "Enter SIP amount", copy: "Start with the monthly SIP amount you want to estimate." },
+      { target: "#sipCalcYears", title: "Set years", copy: "Choose how long the SIP may continue." },
+      { target: "#sipCalcReturn", title: "Choose return assumption", copy: "Use a conservative, balanced, or growth assumption. This is only an estimate." },
+      { target: "#runSipCalcBtn", title: "Calculate", copy: "Calculate the estimated corpus, invested amount, and estimated gain." }
+    ]
+  },
+  salary: {
+    label: "Salary Planner",
+    tab: "salary",
+    steps: [
+      { target: "#salaryIncome", title: "Enter salary", copy: "Add your monthly take-home salary." },
+      { target: ".expense-grid", title: "Add expenses", copy: "Fill Home, Food, Lifestyle, Commute, Bills, and Other to find investable surplus." },
+      { target: "#salaryRisk", title: "Pick risk level", copy: "Choose how much market movement you are comfortable studying." },
+      { target: "#runSalaryBtn", title: "Plan salary", copy: "Plan Salary shows leftover monthly surplus and funds to study from that surplus." }
+    ]
+  },
+  sip: {
+    label: "SIP Replay",
+    tab: "sip",
+    steps: [
+      { target: "#sipSearch", title: "Search funds", copy: "Search and add up to three funds." },
+      { target: "#sipAmount", title: "Enter monthly SIP", copy: "Set the same monthly amount for all selected funds." },
+      { target: "#sipYears", title: "Choose duration", copy: "Pick 3, 5, or 10 years for historical replay." },
+      { target: "#runSipBtn", title: "Run replay", copy: "Replay uses actual NAV dates to compare current historical values." }
+    ]
+  },
+  compare: {
+    label: "Compare",
+    tab: "compare",
+    steps: [
+      { target: "#compareSearch", title: "Add funds", copy: "Search and add 2-4 funds for side-by-side comparison." },
+      { target: "#runCompareBtn", title: "Compare", copy: "Compare returns, score, volatility, drawdown, and SIP replay result." }
+    ]
+  },
+  loan: {
+    label: "Loan Freedom",
+    tab: "loan",
+    steps: [
+      { target: "#loanOutstanding", title: "Enter loan details", copy: "Add outstanding loan, EMI, rate, and remaining years." },
+      { target: "#loanSip", title: "Add side SIP", copy: "Enter the extra monthly SIP amount you want to study alongside the loan." },
+      { target: "#runLoanBtn", title: "Calculate plan", copy: "See when the side corpus may become comparable to remaining loan balance." }
+    ]
+  }
 };
 
 const els = {};
@@ -82,7 +145,8 @@ function init() {
 function cacheEls() {
   [
     "goalSelect", "durationChoices", "riskChoices", "returnChoices", "monthlyAmount", "monthlySlider", "monthlyPretty",
-    "languageSelect", "findFundsBtn", "findFundsMobileBtn", "findStatus", "findError", "recommendationResults",
+    "languageSelect", "helpLaunchBtn", "helpOverlay", "helpCloseBtn", "helpTools", "helpStepCard", "helpPrevBtn", "helpNextBtn",
+    "findFundsBtn", "findFundsMobileBtn", "findStatus", "findError", "recommendationResults",
     "sipCalcAmount", "sipCalcYears", "sipCalcReturn", "sipCalcStepUp", "runSipCalcBtn", "sipCalcError", "sipCalcResults",
     "sipSearch", "sipSearchResults", "sipSearchStatus", "sipSelected", "sipAmount", "sipYears",
     "runSipBtn", "sipStatus", "sipError", "sipResults", "compareSearch", "compareSearchResults",
@@ -92,6 +156,9 @@ function cacheEls() {
     "croreCurrent", "croreSip", "croreReturn", "croreTarget", "monthlyExpense", "freedomMultiplier",
     "freedomCurrent", "freedomSip", "freedomReturn", "runFreedomBtn", "freedomError", "freedomResults",
     "corpusCurrent", "corpusSip", "corpusLumpsum", "corpusYears", "corpusReturn", "corpusStepUp",
+    "salaryIncome", "salaryRisk", "salaryDuration", "salaryReturnPref", "expenseRent", "expenseFood",
+    "expenseShopping", "expenseTransport", "expenseBills", "expenseOther", "runSalaryBtn", "salaryStatus",
+    "salaryError", "salaryResults",
     "runCorpusBtn", "corpusError", "corpusResults", "metalType", "metalView", "runMetalsBtn",
     "metalStatus", "metalError", "metalResults",     "runPopularBtn", "popularStatus", "popularError", "popularResults", "mfapiQueryInput", "mfapiQueryBtn", "mfapiStatus", "mfapiResults"
   ].forEach(id => { els[id] = document.getElementById(id); });
@@ -297,18 +364,88 @@ function wireInputs() {
   });
   els.findFundsBtn.addEventListener("click", findFunds);
   els.findFundsMobileBtn.addEventListener("click", findFunds);
+  els.helpLaunchBtn.addEventListener("click", openHelpGuide);
+  els.helpCloseBtn.addEventListener("click", closeHelpGuide);
+  els.helpOverlay.addEventListener("click", event => {
+    if (event.target === els.helpOverlay) closeHelpGuide();
+  });
+  els.helpPrevBtn.addEventListener("click", () => moveHelpStep(-1));
+  els.helpNextBtn.addEventListener("click", () => moveHelpStep(1));
   els.runSipCalcBtn.addEventListener("click", runSipCalculator);
   els.runSipBtn.addEventListener("click", runSipChallenge);
   els.runCompareBtn.addEventListener("click", runCompare);
   els.runLoanBtn.addEventListener("click", runLoanPlanner);
   els.freedomGoalType.addEventListener("change", updateFreedomFields);
   els.runFreedomBtn.addEventListener("click", runFreedomGoals);
+  els.runSalaryBtn.addEventListener("click", runSalaryPlanner);
   els.runCorpusBtn.addEventListener("click", runCorpusCalculator);
   els.runMetalsBtn.addEventListener("click", runMetalTracker);
   els.runPopularBtn.addEventListener("click", () => loadMostInvestedStudyFunds());
   els.mfapiQueryBtn?.addEventListener("click", () => runMfapiQuery());
   els.mfapiQueryInput?.addEventListener("keydown", e => { if (e.key === 'Enter') runMfapiQuery(); });
   runSipCalculator(false);
+}
+
+function openHelpGuide() {
+  const active = document.querySelector(".section.active")?.id;
+  if (helpGuides[active]) state.helpTool = active;
+  state.helpStep = 0;
+  els.helpOverlay.classList.add("show");
+  els.helpOverlay.setAttribute("aria-hidden", "false");
+  renderHelpGuide();
+}
+
+function closeHelpGuide() {
+  els.helpOverlay.classList.remove("show");
+  els.helpOverlay.setAttribute("aria-hidden", "true");
+  clearHelpHighlight();
+}
+
+function renderHelpGuide() {
+  const guide = helpGuides[state.helpTool] || helpGuides.find;
+  const steps = guide.steps;
+  const step = steps[state.helpStep] || steps[0];
+  showTab(guide.tab, guide.tab);
+  els.helpTools.innerHTML = Object.entries(helpGuides).map(([id, item]) => `
+    <button class="help-tool ${id === state.helpTool ? "active" : ""}" type="button" data-help-tool="${escapeAttr(id)}">${escapeHTML(item.label)}</button>
+  `).join("");
+  els.helpTools.querySelectorAll("[data-help-tool]").forEach(button => {
+    button.addEventListener("click", () => {
+      state.helpTool = button.dataset.helpTool;
+      state.helpStep = 0;
+      renderHelpGuide();
+    });
+  });
+  els.helpStepCard.innerHTML = `
+    <div class="help-count">Step ${state.helpStep + 1} of ${steps.length}</div>
+    <h3>${escapeHTML(step.title)}</h3>
+    <p>${escapeHTML(step.copy)}</p>
+  `;
+  els.helpPrevBtn.disabled = state.helpStep === 0;
+  els.helpNextBtn.textContent = state.helpStep === steps.length - 1 ? "Done" : "Next";
+  highlightHelpTarget(step.target);
+}
+
+function moveHelpStep(direction) {
+  const guide = helpGuides[state.helpTool] || helpGuides.find;
+  if (direction > 0 && state.helpStep === guide.steps.length - 1) {
+    closeHelpGuide();
+    return;
+  }
+  state.helpStep = clamp(state.helpStep + direction, 0, guide.steps.length - 1);
+  renderHelpGuide();
+}
+
+function highlightHelpTarget(selector) {
+  clearHelpHighlight();
+  const target = document.querySelector(selector);
+  if (!target) return;
+  target.classList.add("help-highlight");
+  setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "center" }), 60);
+}
+
+function clearHelpHighlight() {
+  document.querySelectorAll(".help-highlight").forEach(item => item.classList.remove("help-highlight"));
 }
 
 function updateAmountUI() {
@@ -539,12 +676,25 @@ async function findFunds() {
       .sort((a, b) => b.finalRank - a.finalRank)
       .slice(0, 3);
     if (!results.length) throw new Error("MFapi returned insufficient recent NAV history for the shortlisted funds. Try a different risk or duration.");
-    renderRecommendations(results, profile, amount);
+    const hydratedResults = await hydrateFundsWithHistory(results);
+    renderRecommendations(hydratedResults, profile, amount);
   } catch (error) {
     showError(els.findError, error.message || "Something went wrong while finding funds.");
   } finally {
     setFindLoading(false);
   }
+}
+
+async function hydrateFundsWithHistory(funds) {
+  return Promise.all(funds.map(async fund => {
+    if (Array.isArray(fund.history) && fund.history.length) return fund;
+    try {
+      const detail = await getFundDetails(fund.code);
+      return { ...fund, history: detail.history, latest: detail.latest || fund.latest };
+    } catch (_) {
+      return { ...fund, history: [] };
+    }
+  }));
 }
 
 function getProfile() {
@@ -866,6 +1016,7 @@ function strictRecommendationFilter(analysedFunds, profile) {
 function renderRecommendations(funds, profile, amount) {
   const goal = goals.find(g => g.id === profile.goal);
   const displayFunds = selectedStudyFunds(funds, amount);
+  const displayWeights = studyMixWeights(displayFunds, amount);
   state.lastRecommendations = displayFunds;
   els.recommendationResults.innerHTML = `
     <div class="section-head" style="margin-top:24px">
@@ -875,10 +1026,10 @@ function renderRecommendations(funds, profile, amount) {
       </div>
     </div>
     <div class="notice">Based on your selected goal, time horizon, risk level, and return preference, here are funds whose category and historical NAV behavior match your filters. This is not investment advice and does not predict future returns.</div>
-    ${renderStudyMix(displayFunds, amount)}
+    ${renderStudyMix(displayWeights, amount)}
     ${renderPeriodComparison(displayFunds)}
     <div class="results-grid">
-      ${displayFunds.map((fund, index) => renderFundCard(fund, profile, index === 0)).join("")}
+      ${displayWeights.map((item, index) => renderFundCard(item.fund, profile, item.monthlyAmount, index === 0)).join("")}
     </div>
     <div class="notice">Past performance does not guarantee future returns. The Fund Score is an analytical score, not investment advice.</div>
   `;
@@ -1043,8 +1194,7 @@ function renderReturnChartRows(funds, periodId) {
   }).join("");
 }
 
-function renderStudyMix(funds, amount) {
-  const weights = studyMixWeights(funds, amount);
+function renderStudyMix(weights, amount) {
   const colors = ["#007a5a", "#f6b944", "#4f8cff", "#d95f59"];
   let cursor = 0;
   const stops = weights.map((item, index) => {
@@ -1063,7 +1213,7 @@ function renderStudyMix(funds, amount) {
             <div class="mix-item">
               <span class="mix-swatch" style="background:${colors[index % colors.length]}"></span>
               <strong title="${escapeAttr(item.fund.name)}">${escapeHTML(shortName(item.fund.name))}</strong>
-              <span class="mix-percent">${item.percent}% • ${escapeHTML(INR.format(Math.round(amount * item.percent / 100)))}/mo</span>
+              <span class="mix-percent">${item.percent}% • ${escapeHTML(INR.format(item.monthlyAmount))}/mo</span>
             </div>
           `).join("")}
         </div>
@@ -1073,7 +1223,7 @@ function renderStudyMix(funds, amount) {
 }
 
 function studyMixWeights(funds, amount) {
-  if (funds.length === 1) return [{ fund: funds[0], percent: 100 }];
+  if (funds.length === 1) return [{ fund: funds[0], percent: 100, monthlyAmount: amount }];
   const raw = funds.map(fund => ({
     fund,
     weight: Math.max(12, fund.score + (fund.profileFit || 0) - riskPenaltyForMix(fund))
@@ -1083,7 +1233,7 @@ function studyMixWeights(funds, amount) {
   return raw.map((item, index) => {
     const percent = index === raw.length - 1 ? remaining : Math.max(10, Math.round(item.weight / total * 100));
     remaining -= percent;
-    return { fund: item.fund, percent };
+    return { fund: item.fund, percent, monthlyAmount: Math.round(amount * percent / 100) };
   });
 }
 
@@ -1112,7 +1262,7 @@ function isRecentNav(date) {
   return ageDays <= ACTIVE_CUTOFF_DAYS;
 }
 
-function renderFundCard(fund, profile, best) {
+function renderFundCard(fund, profile, amount, best) {
   return `
     <article class="fund-card ${best ? "best" : ""}">
       <div class="fund-top">
@@ -1132,6 +1282,7 @@ function renderFundCard(fund, profile, best) {
         <div class="metric"><small>5Y CAGR</small><strong>${formatPercent(fund.returns.y5)}</strong></div>
         <div class="metric"><small>Score</small><strong>${fund.score}/100</strong></div>
       </div>
+      ${renderPastSipCorpus(fund, amount, profile.duration.years)}
       ${renderFundNavChart(fund, "all")}
       <div class="why">${escapeHTML(whyMatches(fund, profile))}</div>
       <button class="btn btn-ghost" type="button" data-detail>View detailed analysis</button>
@@ -1139,6 +1290,37 @@ function renderFundCard(fund, profile, best) {
         Latest NAV: ${escapeHTML(formatNav(fund.latest.nav))} on ${escapeHTML(formatDate(fund.latest.date))}. 1Y return: ${escapeHTML(formatPercent(fund.returns.y1))}. 10Y CAGR: ${escapeHTML(formatPercent(fund.returns.y10))}. Volatility: ${escapeHTML(formatPercent(fund.volatility))}. Maximum drawdown: ${escapeHTML(formatPercent(fund.maxDrawdown))}. Positive monthly periods: ${escapeHTML(formatPercent(fund.consistency))}. Available NAV history: ${escapeHTML(fund.historyYears.toFixed(1))} years. The score uses historical return, consistency, volatility, drawdown, and history length. It is not investment advice.
       </div>
     </article>
+  `;
+}
+
+function renderPastSipCorpus(fund, amount, years) {
+  if (!Array.isArray(fund.history) || !fund.history.length || !fund.latest) {
+    return `
+      <div class="why">
+        If you had started a ${escapeHTML(INR.format(amount))}/month SIP ${escapeHTML(String(years))} years ago, this fund does not have enough NAV history to reconstruct a clean result.
+      </div>
+    `;
+  }
+  const simulation = simulateSip(fund, amount, years);
+  if (!simulation || simulation.instalments < Math.max(6, years * 8)) {
+    return `
+      <div class="why">
+        If you had started a ${escapeHTML(INR.format(amount))}/month SIP ${escapeHTML(String(years))} years ago, this fund does not have enough NAV history to reconstruct a clean result.
+      </div>
+    `;
+  }
+  return `
+    <div class="past-sip">
+      <div class="past-sip-head">
+        <small>Past SIP replay</small>
+        <span>${escapeHTML(INR.format(amount))}/month • ${escapeHTML(String(years))} years</span>
+      </div>
+      <strong>${escapeHTML(INR.format(simulation.currentValue))}</strong>
+      <div class="past-sip-foot">
+        <span>Corpus today</span>
+        <span>Invested ${escapeHTML(INR.format(simulation.totalInvested))}</span>
+      </div>
+    </div>
   `;
 }
 
@@ -1988,6 +2170,179 @@ function renderFreedomFundSuggestions(funds, profile, input) {
       `).join("")}
     </div>
     <div class="notice">These funds are shown because their category and historical NAV behavior fit the planning profile. They are not a recommendation to invest.</div>
+  `;
+}
+
+/* ---------- Salary planner ---------- */
+async function runSalaryPlanner() {
+  showError(els.salaryError, "");
+  try {
+    const input = readSalaryPlannerInput();
+    validateSalaryPlannerInput(input);
+    const plan = calculateSalaryPlan(input);
+    renderSalaryPlan(input, plan);
+    if (plan.investable >= 1000) {
+      await loadSalaryFundSuggestions(input, plan);
+    }
+  } catch (error) {
+    showError(els.salaryError, error.message || "Could not calculate salary plan.");
+  } finally {
+    setStatus(els.salaryStatus, false);
+    els.runSalaryBtn.disabled = false;
+  }
+}
+
+function readSalaryPlannerInput() {
+  const expenses = {
+    rent: readMoney(els.expenseRent.value) || 0,
+    food: readMoney(els.expenseFood.value) || 0,
+    shopping: readMoney(els.expenseShopping.value) || 0,
+    transport: readMoney(els.expenseTransport.value) || 0,
+    bills: readMoney(els.expenseBills.value) || 0,
+    other: readMoney(els.expenseOther.value) || 0
+  };
+  const duration = durations.find(item => item.id === els.salaryDuration.value) || durations[2];
+  return {
+    income: readMoney(els.salaryIncome.value),
+    expenses,
+    risk: els.salaryRisk.value,
+    duration,
+    returnPref: els.salaryReturnPref.value || "moderate"
+  };
+}
+
+function validateSalaryPlannerInput(input) {
+  if (!input.income || input.income <= 0) throw new Error("Enter a valid monthly salary.");
+  if (Object.values(input.expenses).some(value => value < 0 || Number.isNaN(value))) throw new Error("Enter valid expense amounts.");
+}
+
+function calculateSalaryPlan(input) {
+  const totalExpenses = Object.values(input.expenses).reduce((sum, value) => sum + value, 0);
+  const investable = Math.max(0, input.income - totalExpenses);
+  const savingsRate = input.income ? investable / input.income : 0;
+  const expenseRate = input.income ? totalExpenses / input.income : 0;
+  return { totalExpenses, investable, savingsRate, expenseRate };
+}
+
+function renderSalaryPlan(input, plan) {
+  const hasSurplus = plan.investable >= 1000;
+  els.salaryResults.innerHTML = `
+    <div class="goal-result">
+      <div class="salary-hero">
+        <small>Monthly investable surplus</small>
+        <strong>${escapeHTML(INR.format(plan.investable))}</strong>
+        <span>${escapeHTML(formatPercent(plan.savingsRate))} of salary left after expenses.</span>
+      </div>
+      <div class="insight-grid">
+        <div class="insight"><small>Monthly salary</small><strong>${escapeHTML(INR.format(input.income))}</strong></div>
+        <div class="insight"><small>Total expenses</small><strong>${escapeHTML(INR.format(plan.totalExpenses))}</strong></div>
+        <div class="insight"><small>Risk level</small><strong>${escapeHTML(input.risk)}</strong></div>
+        <div class="insight"><small>Duration</small><strong>${escapeHTML(input.duration.label)}</strong></div>
+      </div>
+      <div class="expense-breakdown">
+        ${salaryExpenseRows(input.expenses, input.income)}
+      </div>
+      ${hasSurplus ? `
+        <section class="period-panel" id="salaryFundSuggestions" aria-label="Funds to study from salary surplus">
+          <h3 class="mix-title">Funds to study from surplus</h3>
+          <div class="meta-line">Loading MFapi historical matches based on your monthly surplus...</div>
+        </section>
+      ` : `
+        <div class="notice">Your expenses use nearly all of the entered salary. Try reducing expenses or increasing income before studying monthly SIP options.</div>
+      `}
+    </div>
+  `;
+  scrollToResults(els.salaryResults);
+}
+
+function salaryExpenseRows(expenses, income) {
+  const labels = {
+    rent: "Home",
+    food: "Food",
+    shopping: "Lifestyle",
+    transport: "Commute",
+    bills: "Bills",
+    other: "Other"
+  };
+  return Object.entries(expenses).map(([key, value]) => {
+    const percent = income ? value / income : 0;
+    return `
+      <div class="expense-row">
+        <span>${escapeHTML(labels[key] || key)}</span>
+        <strong>${escapeHTML(INR.format(value))}</strong>
+        <small>${escapeHTML(formatPercent(percent))}</small>
+      </div>
+    `;
+  }).join("");
+}
+
+async function loadSalaryFundSuggestions(input, plan) {
+  const box = document.getElementById("salaryFundSuggestions");
+  if (!box) return;
+  setStatus(els.salaryStatus, true);
+  els.runSalaryBtn.disabled = true;
+  try {
+    const profile = salaryPlannerProfile(input);
+    const candidates = await getRecommendationCandidates(profile);
+    const analysed = (await Promise.all(candidates.slice(0, 8).map(async candidate => {
+      try {
+        const analysis = await getAnalysedFund(candidate);
+        if (!analysis) return null;
+        analysis.profileFit = profileFitScore(analysis, profile);
+        analysis.finalRank = analysis.score + analysis.profileFit + returnPreferenceScore(analysis, profile.returnPref);
+        return analysis;
+      } catch (_) {
+        return null;
+      }
+    }))).filter(Boolean);
+    const count = suggestedFundCount(plan.investable, analysed.length);
+    const funds = analysed
+      .filter(fund => fund.latest && isRecentNav(fund.latest.date))
+      .sort((a, b) => b.finalRank - a.finalRank)
+      .slice(0, count);
+    if (!funds.length) throw new Error("MFapi did not return enough NAV history for this salary profile.");
+    box.innerHTML = renderSalaryFundSuggestions(funds, profile, plan);
+  } catch (error) {
+    box.innerHTML = `
+      <h3 class="mix-title">Funds to study from surplus</h3>
+      <div class="error">${escapeHTML(error.message || "Could not load fund suggestions right now.")}</div>
+    `;
+  }
+}
+
+function salaryPlannerProfile(input) {
+  return {
+    goal: input.duration.id === "10+" ? "retirement" : "wealth",
+    duration: input.duration,
+    risk: input.risk,
+    returnPref: input.returnPref
+  };
+}
+
+function renderSalaryFundSuggestions(funds, profile, plan) {
+  return `
+    <h3 class="mix-title">Funds to study from surplus</h3>
+    <div class="meta-line">Based on ${escapeHTML(INR.format(plan.investable))}/month surplus, ${escapeHTML(profile.duration.label)}, ${escapeHTML(profile.risk)} risk, and ${escapeHTML(returnPreferenceLabel(profile.returnPref))}. This is educational analysis, not investment advice.</div>
+    <div class="results-grid" style="margin-top:14px">
+      ${funds.map((fund, index) => `
+        <article class="fund-card ${index === 0 ? "best" : ""}">
+          <div class="fund-top">
+            <div>
+              <h3 class="fund-name">${escapeHTML(cleanName(fund.name))}</h3>
+              <div class="meta-line">${escapeHTML(metaLabel(fund))}</div>
+            </div>
+            <div class="score-ring" style="--p:${fund.score}"><span>${fund.score}</span></div>
+          </div>
+          <div class="metrics primary">
+            <div class="metric"><small>1Y</small><strong>${escapeHTML(formatPercent(fund.periodReturns?.y1))}</strong></div>
+            <div class="metric"><small>3Y CAGR</small><strong>${escapeHTML(formatPercent(fund.periodReturns?.y3))}</strong></div>
+            <div class="metric"><small>5Y CAGR</small><strong>${escapeHTML(formatPercent(fund.periodReturns?.y5))}</strong></div>
+          </div>
+          <div class="why">${escapeHTML(whyMatches(fund, profile))}</div>
+        </article>
+      `).join("")}
+    </div>
+    <div class="notice">Salary surplus is not a recommendation to invest the full amount. Keep emergency money and near-term needs separate before starting any SIP.</div>
   `;
 }
 
