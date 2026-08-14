@@ -206,7 +206,7 @@ h1 {
   font-size: 20px;
   line-height: 1;
 }
-.seo-tools[open] summary::after { content: "−"; }
+.seo-tools[open] summary::after { content: "âˆ’"; }
 .seo-strip {
   margin-top: 12px;
   display: grid;
@@ -392,7 +392,7 @@ main { padding-bottom: 70px; }
   transform: translateY(-2px);
 }
 .choice.selected::after {
-  content: "✓";
+  content: "âœ“";
   position: absolute;
   top: 12px;
   right: 12px;
@@ -2028,5 +2028,85 @@ tr:last-child td { border-bottom: 0; }
 @media (prefers-color-scheme: dark) {
   .help-actions {
     background: linear-gradient(180deg, transparent 0%, var(--paper) 28%);
+  }
+}
+/* =========================================================
+   Salary Planner - Mobile Fund Suggestions Fix
+   Keeps suggested funds stacked vertically on tablets/phones
+   and prevents long fund names/metrics from overlapping.
+   ========================================================= */
+@media (max-width: 880px) {
+  #salaryFundSuggestions .results-grid {
+    grid-template-columns: 1fr !important;
+    width: 100%;
+  }
+
+  #salaryFundSuggestions .fund-card {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  #salaryFundSuggestions .fund-top {
+    width: 100%;
+    min-width: 0;
+    align-items: flex-start;
+  }
+
+  #salaryFundSuggestions .fund-top > div:first-child {
+    flex: 1;
+    min-width: 0;
+  }
+
+  #salaryFundSuggestions .fund-name,
+  #salaryFundSuggestions .meta-line,
+  #salaryFundSuggestions .why {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  #salaryFundSuggestions .metrics.primary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  #salaryFundSuggestions .metric {
+    min-width: 0;
+  }
+
+  #salaryFundSuggestions .score-ring {
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  #salaryFundSuggestions .results-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  #salaryFundSuggestions .fund-card {
+    padding: 14px;
+  }
+
+  #salaryFundSuggestions .metrics.primary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  #salaryFundSuggestions .metric {
+    min-width: 0;
+    padding: 8px 5px;
+    text-align: center;
+  }
+
+  #salaryFundSuggestions .metric small {
+    font-size: 10px;
+  }
+
+  #salaryFundSuggestions .metric strong {
+    font-size: 12px;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
   }
 }
