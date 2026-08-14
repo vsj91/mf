@@ -5,11 +5,6 @@ const API_BASE = "https://api.mfapi.in/mf";
 const SEARCH_TTL = 1000 * 60 * 60 * 24 * 30;
 const DETAIL_TTL = 1000 * 60 * 60 * 24 * 7;
 const ANALYSIS_TTL = 1000 * 60 * 60 * 24 * 7;
-// Active/stale cutoffs and history thresholds
-const ACTIVE_CUTOFF_DAYS = 180; // considered active within 180 days
-const SEVERE_STALE_DAYS = 730;   // treat NAV older than this as severely stale
-const MIN_HISTORY_ROWS = 250;    // default minimum rows for analysis
-const MIN_DEBT_HISTORY_ROWS = 90; // allow shorter history for debt/liquid schemes
 const INR = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 const PCT = new Intl.NumberFormat("en-IN", { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
@@ -160,7 +155,7 @@ function cacheEls() {
     "expenseShopping", "expenseTransport", "expenseBills", "expenseOther", "runSalaryBtn", "salaryStatus",
     "salaryError", "salaryResults",
     "runCorpusBtn", "corpusError", "corpusResults", "metalType", "metalView", "runMetalsBtn",
-    "metalStatus", "metalError", "metalResults",     "runPopularBtn", "popularStatus", "popularError", "popularResults", "mfapiQueryInput", "mfapiQueryBtn", "mfapiStatus", "mfapiResults"
+    "metalStatus", "metalError", "metalResults", "runPopularBtn", "popularStatus", "popularError", "popularResults"
   ].forEach(id => { els[id] = document.getElementById(id); });
 }
 
@@ -381,8 +376,6 @@ function wireInputs() {
   els.runCorpusBtn.addEventListener("click", runCorpusCalculator);
   els.runMetalsBtn.addEventListener("click", runMetalTracker);
   els.runPopularBtn.addEventListener("click", () => loadMostInvestedStudyFunds());
-  els.mfapiQueryBtn?.addEventListener("click", () => runMfapiQuery());
-  els.mfapiQueryInput?.addEventListener("keydown", e => { if (e.key === 'Enter') runMfapiQuery(); });
   runSipCalculator(false);
 }
 
@@ -519,11 +512,7 @@ async function getAnalysedFund(candidate) {
   const cached = readCache(cacheKey, ANALYSIS_TTL);
   if (cached) return hydrateAnalysis(cached);
   const detail = await getFundDetails(candidate.schemeCode);
-  // Determine minimum history rows — allow shorter histories for debt/liquid schemes
-  const nameText = `${candidate.schemeName || candidate.name || ""}`.toLowerCase();
-  const isDebtLikeCandidate = /liquid|overnight|money market|short|ultra short|corporate|debt|gilt|g-sec/.test(nameText) || /idcw|dividend|payout/.test(nameText);
-  const minRows = isDebtLikeCandidate ? MIN_DEBT_HISTORY_ROWS : MIN_HISTORY_ROWS;
-  if (detail.history.length < minRows) return null;
+  if (detail.history.length < 250) return null;
   const analysis = analyseFund(candidate, detail);
   const light = stripAnalysisForCache(analysis);
   writeCache(cacheKey, light);
@@ -713,83 +702,6 @@ function scheduleRecommendationPrefetch(timeout = 1000) {
 }
 
 function scheduleIdle(callback, timeout = 1000) {
-  if (typeof runMfapiQuery === 'undefined') {
-    // placeholder to ensure function exists when scripts reload in dev
-  }
-  if ("requestIdleCallback" in window) {
-    window.requestIdleCallback(callback, { timeout });
-    return;
-  }
-  window.setTimeout(callback, timeout);
-}
-
-// MFapi query tools: allow direct searching or fetching scheme details for debugging and exploration.
-async function runMfapiQuery() {
-  const q = (els.mfapiQueryInput?.value || "").trim();
-  if (!q) {
-    els.mfapiResults.innerHTML = `<div class="empty">Enter a search term or scheme code.</div>`;
-    return;
-  }
-  setStatus(els.mfapiStatus, true);
-  els.mfapiResults.innerHTML = "";
-  try {
-    // If numeric, treat as scheme code and fetch details
-    if (/^\d+$/.test(q)) {
-      const detail = await getFundDetails(q);
-      if (!detail || !detail.latest) {
-        els.mfapiResults.innerHTML = `<div class="error">No NAV history found for scheme code ${escapeHTML(q)}.</div>`;
-      } else {
-        els.mfapiResults.innerHTML = renderFundDetail(detail);
-      }
-    } else {
-      const funds = await searchFunds(q);
-      if (!funds || !funds.length) {
-        els.mfapiResults.innerHTML = `<div class="empty">No results from MFapi for '${escapeHTML(q)}'.</div>`;
-      } else {
-        els.mfapiResults.innerHTML = `<div class="search-results-box">${funds.slice(0,20).map(f=> `<button class="search-item" type="button" data-code="${escapeAttr(f.schemeCode)}">${escapeHTML(cleanName(f.schemeName))} <span class="pill">Fetch</span></button>`).join('')}</div>`;
-        // wire buttons
-        els.mfapiResults.querySelectorAll('.search-item').forEach(btn => btn.addEventListener('click', async () => {
-          const code = btn.dataset.code;
-          setStatus(els.mfapiStatus, true);
-          try {
-            const detail = await getFundDetails(code);
-            els.mfapiResults.innerHTML = renderFundDetail(detail);
-          } catch (e) {
-            els.mfapiResults.innerHTML = `<div class="error">Could not fetch details for ${escapeHTML(code)}.</div>`;
-          } finally { setStatus(els.mfapiStatus, false); }
-        }));
-      }
-    }
-  } catch (error) {
-    els.mfapiResults.innerHTML = `<div class="error">${escapeHTML(error.message || 'MFapi query failed.')}</div>`;
-  } finally {
-    setStatus(els.mfapiStatus, false);
-  }
-}
-
-function renderFundDetail(detail) {
-  if (!detail) return `<div class="error">No data</div>`;
-  const latest = detail.latest || {}; 
-  const nav = latest.nav != null ? formatNav(latest.nav) : 'N/A';
-  const latestDate = latest.date ? formatDate(latest.date) : 'N/A';
-  const returns = detail.returns || {};
-  const volatility = detail.volatility != null ? formatPercent(detail.volatility) : 'N/A';
-  const historyYears = detail.historyYears != null ? `${detail.historyYears.toFixed(1)} yrs` : 'N/A';
-  return `
-    <div class="panel">
-      <h3>${escapeHTML(detail.name || detail.meta?.scheme_name || 'Fund')}</h3>
-      <div class="meta-line">Category: ${escapeHTML(detail.category || detail.meta?.scheme_category || 'N/A')}</div>
-      <div class="meta-line">Latest NAV: ${escapeHTML(nav)} on ${escapeHTML(latestDate)}</div>
-      <div class="metrics primary" style="margin-top:12px">
-        <div class="metric"><small>1Y</small><strong>${escapeHTML(formatPercent(returns.y1))}</strong></div>
-        <div class="metric"><small>3Y</small><strong>${escapeHTML(formatPercent(returns.y3))}</strong></div>
-        <div class="metric"><small>5Y</small><strong>${escapeHTML(formatPercent(returns.y5))}</strong></div>
-        <div class="metric"><small>Volatility</small><strong>${escapeHTML(volatility)}</strong></div>
-      </div>
-      <div style="margin-top:12px">Available NAV history: ${escapeHTML(historyYears)}</div>
-    </div>
-  `;
-}
   if ("requestIdleCallback" in window) {
     window.requestIdleCallback(callback, { timeout });
     return;
@@ -973,26 +885,9 @@ function strictRecommendationFilter(analysedFunds, profile) {
     if (profile.risk === "Low") {
       // prefer Low/Moderate buckets, exclude small-cap/sector/thematic
       if (/small cap|sector|thematic/.test(text)) return false;
-
-      // Debt-like funds should not be discarded lightly. Use active-first strategy: prefer active funds, but allow older NAV if necessary.
-      const isDebtLikeText = /liquid|overnight|money market|short duration|ultra short|corporate|debt|gilt|g-sec/.test(text) || /idcw|dividend|payout/.test(text);
-      if (isDebtLikeText) {
-        // If fund has no NAV or is severely stale, reject.
-        if (!fund.latest) return false;
-        const ageDays = fund.latest ? (Date.now() - fund.latest.date.getTime()) / (24 * 60 * 60 * 1000) : Infinity;
-        if (ageDays > SEVERE_STALE_DAYS) return false;
-        // Allow older NAVs up to SEVERE_STALE_DAYS; prefer active ones in selection ordering later.
-      }
-
-      // Allow 'High' bucket candidates only if they are debt-like or show low volatility
-      if (textRisk === "Very High") return false;
-      if (textRisk === "High") {
-        const isDebtLike = /debt|liquid|ultra short|short duration|corporate|gilt|g-sec|overnight|money market/.test(text);
-        if (!isDebtLike && (fund.volatility == null || fund.volatility > 0.22)) return false;
-      }
-
-      // prefer low volatility when stable preference — relaxed threshold
-      if (profile.returnPref === "stable" && fund.volatility != null && fund.volatility > 0.24) return false;
+      if (textRisk === "Very High" || textRisk === "High") return false;
+      // prefer low volatility when stable preference
+      if (profile.returnPref === "stable" && fund.volatility != null && fund.volatility > 0.18) return false;
     }
     if (profile.risk === "Moderate") {
       // allow Moderate or Low; deprioritize Very High
@@ -1258,8 +1153,7 @@ function riskPenaltyForMix(fund) {
 function isRecentNav(date) {
   if (!(date instanceof Date)) return false;
   const ageDays = (Date.now() - date.getTime()) / (24 * 60 * 60 * 1000);
-  // Active-fund cutoff: consider NAVs updated within the last ACTIVE_CUTOFF_DAYS as active
-  return ageDays <= ACTIVE_CUTOFF_DAYS;
+  return ageDays <= 180;
 }
 
 function renderFundCard(fund, profile, amount, best) {
@@ -1272,7 +1166,6 @@ function renderFundCard(fund, profile, amount, best) {
           <div class="quick-label">
             ${best ? `<span class="pill">Closest study match</span>` : ""}
             <span class="pill">Risk: ${escapeHTML(riskLabel(fund))}</span>
-            ${fund.latest && !isRecentNav(fund.latest.date) ? `<span class="pill stale">Stale NAV ${escapeHTML(formatDate(fund.latest.date))}</span>` : ""}
           </div>
         </div>
         <div class="score-ring" style="--p:${fund.score}"><span>${fund.score}</span></div>
@@ -2432,7 +2325,7 @@ async function runMetalTracker() {
     const analysed = (await Promise.all(candidates.slice(0, 12).map(async candidate => {
       try {
         const analysis = await getAnalysedFund(candidate);
-        if (!analysis || !analysis.latest) return null;
+        if (!analysis || !analysis.latest || !isRecentNav(analysis.latest.date)) return null;
         analysis.metalRank = analysis.score + (/direct/i.test(analysis.name) ? 8 : 0) + (/growth/i.test(analysis.name) ? 5 : 0);
         return analysis;
       } catch (_) {
