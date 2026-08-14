@@ -1234,14 +1234,6 @@ input[type="range"] {
   gap: 18px;
   align-items: start;
 }
-
-/* Salary Planner: keep results full-width so desktop fund suggestions stay horizontal. */
-#salary .two-col {
-  grid-template-columns: 1fr;
-}
-#salaryFundSuggestions .results-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
 .chart-wrap {
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -1637,6 +1629,17 @@ tr:last-child td { border-bottom: 0; }
   .empty {
     background: rgba(28, 28, 30, .62);
     border-color: rgba(255, 255, 255, .18);
+  }
+}
+
+/* Desktop-only Salary Planner result layout. Mobile CSS below remains untouched. */
+@media (min-width: 881px) {
+  #salary .two-col {
+    grid-template-columns: 1fr;
+  }
+
+  #salaryFundSuggestions .results-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
