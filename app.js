@@ -51,7 +51,70 @@ const state = {
   language: localStorage.getItem("ffi_language") || "en",
   sipSelected: [],
   compareSelected: [],
-  lastRecommendations: []
+  lastRecommendations: [],
+  helpTool: "find",
+  helpStep: 0
+};
+
+const helpGuides = {
+  find: {
+    label: "Find Funds",
+    tab: "find",
+    steps: [
+      { target: "#goalSelect", title: "Choose your goal", copy: "Pick what the money is for, such as wealth, retirement, house, education, travel, or emergency fund." },
+      { target: "#monthlyAmount", title: "Enter monthly amount", copy: "Add the amount you are thinking of investing every month. This also controls how many funds are shown." },
+      { target: "#durationChoices", title: "Set duration", copy: "Choose how long the money can stay invested. Short timelines usually need steadier categories." },
+      { target: "#riskChoices", title: "Choose risk comfort", copy: "Select the level of ups and downs you can emotionally handle." },
+      { target: "#findFundsBtn", title: "Study the shortlist", copy: "Press Study Funds to see fund matches, historical returns, score, and past SIP replay." }
+    ]
+  },
+  sipcalc: {
+    label: "SIP Calculator",
+    tab: "sipcalc",
+    steps: [
+      { target: "#sipCalcAmount", title: "Enter SIP amount", copy: "Start with the monthly SIP amount you want to estimate." },
+      { target: "#sipCalcYears", title: "Set years", copy: "Choose how long the SIP may continue." },
+      { target: "#sipCalcReturn", title: "Choose return assumption", copy: "Use a conservative, balanced, or growth assumption. This is only an estimate." },
+      { target: "#runSipCalcBtn", title: "Calculate", copy: "Calculate the estimated corpus, invested amount, and estimated gain." }
+    ]
+  },
+  salary: {
+    label: "Salary Planner",
+    tab: "salary",
+    steps: [
+      { target: "#salaryIncome", title: "Enter salary", copy: "Add your monthly take-home salary." },
+      { target: ".expense-grid", title: "Add expenses", copy: "Fill Home, Food, Lifestyle, Commute, Bills, and Other to find investable surplus." },
+      { target: "#salaryRisk", title: "Pick risk level", copy: "Choose how much market movement you are comfortable studying." },
+      { target: "#runSalaryBtn", title: "Plan salary", copy: "Plan Salary shows leftover monthly surplus and funds to study from that surplus." }
+    ]
+  },
+  sip: {
+    label: "SIP Replay",
+    tab: "sip",
+    steps: [
+      { target: "#sipSearch", title: "Search funds", copy: "Search and add up to three funds." },
+      { target: "#sipAmount", title: "Enter monthly SIP", copy: "Set the same monthly amount for all selected funds." },
+      { target: "#sipYears", title: "Choose duration", copy: "Pick 3, 5, or 10 years for historical replay." },
+      { target: "#runSipBtn", title: "Run replay", copy: "Replay uses actual NAV dates to compare current historical values." }
+    ]
+  },
+  compare: {
+    label: "Compare",
+    tab: "compare",
+    steps: [
+      { target: "#compareSearch", title: "Add funds", copy: "Search and add 2-4 funds for side-by-side comparison." },
+      { target: "#runCompareBtn", title: "Compare", copy: "Compare returns, score, volatility, drawdown, and SIP replay result." }
+    ]
+  },
+  loan: {
+    label: "Loan Freedom",
+    tab: "loan",
+    steps: [
+      { target: "#loanOutstanding", title: "Enter loan details", copy: "Add outstanding loan, EMI, rate, and remaining years." },
+      { target: "#loanSip", title: "Add side SIP", copy: "Enter the extra monthly SIP amount you want to study alongside the loan." },
+      { target: "#runLoanBtn", title: "Calculate plan", copy: "See when the side corpus may become comparable to remaining loan balance." }
+    ]
+  }
 };
 
 const els = {};
@@ -77,7 +140,8 @@ function init() {
 function cacheEls() {
   [
     "goalSelect", "durationChoices", "riskChoices", "returnChoices", "monthlyAmount", "monthlySlider", "monthlyPretty",
-    "languageSelect", "findFundsBtn", "findFundsMobileBtn", "findStatus", "findError", "recommendationResults",
+    "languageSelect", "helpLaunchBtn", "helpOverlay", "helpCloseBtn", "helpTools", "helpStepCard", "helpPrevBtn", "helpNextBtn",
+    "findFundsBtn", "findFundsMobileBtn", "findStatus", "findError", "recommendationResults",
     "sipCalcAmount", "sipCalcYears", "sipCalcReturn", "sipCalcStepUp", "runSipCalcBtn", "sipCalcError", "sipCalcResults",
     "sipSearch", "sipSearchResults", "sipSearchStatus", "sipSelected", "sipAmount", "sipYears",
     "runSipBtn", "sipStatus", "sipError", "sipResults", "compareSearch", "compareSearchResults",
@@ -295,6 +359,13 @@ function wireInputs() {
   });
   els.findFundsBtn.addEventListener("click", findFunds);
   els.findFundsMobileBtn.addEventListener("click", findFunds);
+  els.helpLaunchBtn.addEventListener("click", openHelpGuide);
+  els.helpCloseBtn.addEventListener("click", closeHelpGuide);
+  els.helpOverlay.addEventListener("click", event => {
+    if (event.target === els.helpOverlay) closeHelpGuide();
+  });
+  els.helpPrevBtn.addEventListener("click", () => moveHelpStep(-1));
+  els.helpNextBtn.addEventListener("click", () => moveHelpStep(1));
   els.runSipCalcBtn.addEventListener("click", runSipCalculator);
   els.runSipBtn.addEventListener("click", runSipChallenge);
   els.runCompareBtn.addEventListener("click", runCompare);
@@ -306,6 +377,68 @@ function wireInputs() {
   els.runMetalsBtn.addEventListener("click", runMetalTracker);
   els.runPopularBtn.addEventListener("click", () => loadMostInvestedStudyFunds());
   runSipCalculator(false);
+}
+
+function openHelpGuide() {
+  const active = document.querySelector(".section.active")?.id;
+  if (helpGuides[active]) state.helpTool = active;
+  state.helpStep = 0;
+  els.helpOverlay.classList.add("show");
+  els.helpOverlay.setAttribute("aria-hidden", "false");
+  renderHelpGuide();
+}
+
+function closeHelpGuide() {
+  els.helpOverlay.classList.remove("show");
+  els.helpOverlay.setAttribute("aria-hidden", "true");
+  clearHelpHighlight();
+}
+
+function renderHelpGuide() {
+  const guide = helpGuides[state.helpTool] || helpGuides.find;
+  const steps = guide.steps;
+  const step = steps[state.helpStep] || steps[0];
+  showTab(guide.tab, guide.tab);
+  els.helpTools.innerHTML = Object.entries(helpGuides).map(([id, item]) => `
+    <button class="help-tool ${id === state.helpTool ? "active" : ""}" type="button" data-help-tool="${escapeAttr(id)}">${escapeHTML(item.label)}</button>
+  `).join("");
+  els.helpTools.querySelectorAll("[data-help-tool]").forEach(button => {
+    button.addEventListener("click", () => {
+      state.helpTool = button.dataset.helpTool;
+      state.helpStep = 0;
+      renderHelpGuide();
+    });
+  });
+  els.helpStepCard.innerHTML = `
+    <div class="help-count">Step ${state.helpStep + 1} of ${steps.length}</div>
+    <h3>${escapeHTML(step.title)}</h3>
+    <p>${escapeHTML(step.copy)}</p>
+  `;
+  els.helpPrevBtn.disabled = state.helpStep === 0;
+  els.helpNextBtn.textContent = state.helpStep === steps.length - 1 ? "Done" : "Next";
+  highlightHelpTarget(step.target);
+}
+
+function moveHelpStep(direction) {
+  const guide = helpGuides[state.helpTool] || helpGuides.find;
+  if (direction > 0 && state.helpStep === guide.steps.length - 1) {
+    closeHelpGuide();
+    return;
+  }
+  state.helpStep = clamp(state.helpStep + direction, 0, guide.steps.length - 1);
+  renderHelpGuide();
+}
+
+function highlightHelpTarget(selector) {
+  clearHelpHighlight();
+  const target = document.querySelector(selector);
+  if (!target) return;
+  target.classList.add("help-highlight");
+  setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "center" }), 60);
+}
+
+function clearHelpHighlight() {
+  document.querySelectorAll(".help-highlight").forEach(item => item.classList.remove("help-highlight"));
 }
 
 function updateAmountUI() {

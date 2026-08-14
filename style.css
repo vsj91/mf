@@ -103,6 +103,16 @@ a { color: inherit; }
   gap: 8px;
   flex-shrink: 0;
 }
+.help-launch {
+  min-height: 42px;
+  border: 1px solid rgba(0, 122, 90, .24);
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--brand);
+  padding: 0 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
 .language-select {
   min-height: 42px;
   max-width: 178px;
@@ -508,79 +518,103 @@ input[type="range"] {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
-.guide-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+.help-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, .24);
+  padding: 88px 16px 16px;
 }
-.guide-card {
+.help-overlay.show {
+  display: block;
+}
+.help-panel {
+  width: min(430px, 100%);
+  margin-left: auto;
   border: 1px solid var(--line);
   border-radius: 22px;
   background: var(--paper);
-  padding: 18px;
+  box-shadow: var(--shadow);
+  padding: 16px;
   display: grid;
-  gap: 12px;
-  align-content: start;
-  box-shadow: 0 16px 40px rgba(29, 29, 31, .06);
+  gap: 14px;
 }
-.guide-card.primary {
-  border-color: rgba(0, 122, 90, .34);
-  background: linear-gradient(180deg, rgba(237, 248, 244, .92), var(--paper));
+.help-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 36px;
+  gap: 10px;
+  align-items: start;
 }
-.guide-step {
-  width: fit-content;
-  border-radius: 999px;
-  background: var(--soft);
-  color: var(--brand);
-  padding: 6px 10px;
-  font-size: 12px;
-  font-weight: 900;
-}
-.guide-card h3 {
+.help-top h2 {
   margin: 0;
-  font-size: 20px;
-  line-height: 1.15;
+  font-size: 22px;
 }
-.guide-card p {
-  margin: 0;
+.help-top p,
+.help-step-card p {
+  margin: 6px 0 0;
   color: var(--muted);
   line-height: 1.45;
-  font-size: 14px;
 }
-.guide-card .btn {
-  width: fit-content;
-  min-height: 42px;
-  margin-top: 4px;
-}
-.guide-flow {
-  margin-top: 16px;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-}
-.guide-flow div {
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--surface);
-  padding: 12px;
-  display: grid;
-  gap: 8px;
-}
-.guide-flow strong {
-  width: 28px;
-  height: 28px;
+.help-close {
+  border: 0;
   border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: 900;
+}
+.help-tools {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.help-tools::-webkit-scrollbar { display: none; }
+.help-tool {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  padding: 8px 11px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+.help-tool.active {
+  border-color: var(--brand);
   background: var(--brand);
   color: #fff;
-  display: grid;
-  place-items: center;
-  font-size: 13px;
 }
-.guide-flow span {
-  color: var(--muted);
-  font-weight: 800;
-  line-height: 1.35;
-  font-size: 13px;
+.help-step-card {
+  border: 1px solid rgba(0, 122, 90, .2);
+  border-radius: 18px;
+  background: var(--soft);
+  padding: 14px;
+}
+.help-count {
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+.help-step-card h3 {
+  margin: 0;
+  font-size: 19px;
+}
+.help-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.help-highlight {
+  position: relative;
+  z-index: 61;
+  outline: 4px solid rgba(246, 185, 68, .9);
+  outline-offset: 5px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, .18), 0 0 0 10px rgba(246, 185, 68, .16);
+  border-radius: 18px;
 }
 #loanFundSuggestions .results-grid,
 #freedomFundSuggestions .results-grid {
@@ -1457,18 +1491,23 @@ tr:last-child td { border-bottom: 0; }
     background: linear-gradient(135deg, #6ee7b7, var(--brand-2));
     box-shadow: 0 16px 38px rgba(18, 184, 134, .22);
   }
+  .help-launch {
+    background: rgba(53, 212, 154, .14);
+    color: #8ff0c5;
+    border-color: rgba(53, 212, 154, .24);
+  }
   .eyebrow, .mini-row, .choice, .fund-card, .metric, .learn-card, .insight, .savings-circle-wrap, .period-btn, .fund-chart, .fund-chart-btn,
-  .search-item, .chip, .chart-wrap, .table-wrap, .input, .segment, .guide-card, .guide-flow div {
+  .search-item, .chip, .chart-wrap, .table-wrap, .input, .segment, .help-panel, .help-close, .help-tool {
     background: rgba(28, 28, 30, .86);
     border-color: rgba(255, 255, 255, .12);
   }
-  .guide-card.primary {
-    background: linear-gradient(180deg, rgba(53, 212, 154, .13), rgba(28, 28, 30, .86));
+  .help-step-card {
+    background: rgba(53, 212, 154, .14);
     border-color: rgba(53, 212, 154, .24);
   }
-  .guide-step {
-    background: rgba(53, 212, 154, .14);
-    color: #8ff0c5;
+  .help-tool.active {
+    color: #06150f;
+    background: linear-gradient(135deg, #6ee7b7, var(--brand-2));
   }
   .mobile-fund-row {
     background: rgba(28, 28, 30, .86);
@@ -1602,8 +1641,7 @@ tr:last-child td { border-bottom: 0; }
   .tab { scroll-snap-align: start; }
   .hero { grid-template-columns: 1fr; padding-top: 24px; gap: 12px; }
   .cards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .results-grid, .learn-grid, .guide-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .guide-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .results-grid, .learn-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .seo-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .form-row, .two-col { grid-template-columns: 1fr; }
   .expense-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1640,6 +1678,7 @@ tr:last-child td { border-bottom: 0; }
   .brand { grid-column: 1; grid-row: 1; }
   .tabs { grid-column: 1 / -1; grid-row: 2; }
   .language-wrap { grid-column: 2; grid-row: 1; justify-self: end; }
+  .help-launch { min-height: 36px; padding: 0 10px; font-size: 12px; }
   .language-select { min-height: 36px; max-width: 132px; padding-left: 10px; font-size: 12px; }
   .brand-mark { width: 32px; height: 32px; border-radius: 10px; }
   .brand { font-size: 15px; }
@@ -1739,9 +1778,10 @@ tr:last-child td { border-bottom: 0; }
   .mix-donut { width: 132px; height: 132px; }
   .mix-donut::after { width: 78px; height: 78px; font-size: 12px; }
   .mix-title { font-size: 18px; }
-  .results-grid, .learn-grid, .guide-grid, .guide-flow { grid-template-columns: 1fr; }
-  .guide-card { padding: 14px; border-radius: 18px; }
-  .guide-card .btn { width: 100%; }
+  .results-grid, .learn-grid { grid-template-columns: 1fr; }
+  .help-overlay { padding: 76px 10px 10px; }
+  .help-panel { margin: 0 auto; padding: 14px; border-radius: 18px; }
+  .help-actions .btn { min-height: 44px; }
   .insight-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .expense-grid { grid-template-columns: 1fr; }
   .expense-row {
