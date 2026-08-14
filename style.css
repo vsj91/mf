@@ -1807,28 +1807,125 @@ tr:last-child td { border-bottom: 0; }
   .freedom-hero { padding: 16px; border-radius: 22px; }
 }
 
-/* Horizon guidance — theme-safe overrides */
-@media (prefers-color-scheme: dark) {
-  .horizon-risk-note {
-    border-color: rgba(255, 209, 102, .28);
-    background: linear-gradient(135deg, rgba(154, 103, 0, .18), rgba(28, 28, 30, .92));
-    box-shadow: none;
+/* Risk + horizon guidance */
+.risk-horizon-guidance {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(154, 103, 0, .24);
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(255, 248, 231, .96), rgba(251, 251, 253, .92));
+  color: var(--ink);
+}
+.risk-horizon-guidance[hidden] { display: none !important; }
+.risk-horizon-icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: rgba(246, 185, 68, .16);
+  font-size: 23px;
+}
+.risk-horizon-content { min-width: 0; }
+.risk-horizon-content > strong {
+  display: block;
+  font-size: 16px;
+  line-height: 1.35;
+}
+.risk-horizon-content p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+  font-size: 14px;
+}
+.risk-horizon-tags {
+  margin-top: 11px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.risk-horizon-tags span {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid rgba(154, 103, 0, .18);
+  border-radius: 999px;
+  background: rgba(255, 248, 231, .9);
+  color: #73510a;
+  font-size: 12px;
+  font-weight: 800;
+}
+.risk-horizon-actions {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+}
+.risk-horizon-change { flex-shrink: 0; }
+
+.short-horizon-result-note {
+  margin: 0 0 16px;
+  display: grid;
+  gap: 5px;
+  padding: 14px 16px;
+  border: 1px solid rgba(0, 122, 90, .20);
+  border-radius: 18px;
+  background: var(--soft);
+  color: var(--ink);
+}
+.short-horizon-result-note strong { font-size: 15px; }
+.short-horizon-result-note span {
+  color: var(--muted);
+  line-height: 1.45;
+  font-size: 13px;
+}
+
+@media (max-width: 680px) {
+  .risk-horizon-guidance {
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 10px;
+    padding: 13px;
+    border-radius: 17px;
   }
-  .horizon-risk-icon { background: rgba(255, 209, 102, .14); }
-  .horizon-risk-title { color: var(--ink); }
-  .horizon-risk-tags span {
-    border-color: rgba(255, 209, 102, .22);
-    background: rgba(255, 209, 102, .09);
+  .risk-horizon-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    font-size: 20px;
+  }
+  .risk-horizon-actions {
+    align-items: stretch;
+  }
+  .risk-horizon-change {
+    width: 100%;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .risk-horizon-guidance {
+    border-color: rgba(255, 209, 102, .25);
+    background: linear-gradient(135deg, rgba(154, 103, 0, .18), rgba(28, 28, 30, .92));
+    color: var(--ink);
+  }
+  .risk-horizon-icon {
+    background: rgba(255, 209, 102, .13);
+  }
+  .risk-horizon-tags span {
+    border-color: rgba(255, 209, 102, .19);
+    background: rgba(255, 209, 102, .08);
     color: #ffe09a;
   }
-  .horizon-risk-actions { color: var(--ink); }
   .short-horizon-result-note {
-    border-color: rgba(53, 212, 154, .24);
-    background: linear-gradient(135deg, rgba(53, 212, 154, .10), rgba(28, 28, 30, .92));
-  }
-  .short-horizon-result-legend span {
-    background: rgba(255, 255, 255, .045);
-    border-color: var(--line);
-    color: var(--muted);
+    border-color: rgba(53, 212, 154, .23);
+    background: rgba(53, 212, 154, .10);
   }
 }

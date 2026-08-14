@@ -126,6 +126,7 @@ function init() {
   cacheEls();
   renderLanguageOptions();
   renderChoices();
+  updateRiskHorizonGuidance();
   wireTabs();
   wireInputs();
   wireSearch("sipSearch", "sipSearchResults", "sipSearchStatus", addSipFund, 3);
@@ -322,6 +323,64 @@ function showTab(id, hashId = id) {
   if (hashId) history.replaceState(null, "", "#" + hashId);
 }
 
+
+function updateRiskHorizonGuidance() {
+  const riskHost = els.riskChoices?.parentElement;
+  if (!riskHost) return;
+
+  let note = document.getElementById("riskHorizonGuidance");
+  if (!note) {
+    note = document.createElement("div");
+    note.id = "riskHorizonGuidance";
+    note.className = "risk-horizon-guidance";
+    note.setAttribute("role", "status");
+    note.setAttribute("aria-live", "polite");
+    riskHost.appendChild(note);
+  }
+
+  const isShortHorizon = state.duration === "1-3";
+  const isHighRisk = state.risk === "High" || state.risk === "Very High";
+  const shouldShow = isShortHorizon && isHighRisk;
+
+  if (!shouldShow) {
+    note.hidden = true;
+    note.innerHTML = "";
+    return;
+  }
+
+  note.hidden = false;
+  note.innerHTML = `
+    <div class="risk-horizon-icon" aria-hidden="true">🛡️</div>
+    <div class="risk-horizon-content">
+      <strong>${escapeHTML(state.risk)} risk selected — but your time horizon is short</strong>
+      <p>
+        Your risk tolerance is ${escapeHTML(state.risk.toLowerCase())}, but a 1–3 year goal may not leave enough time
+        for equity markets to recover after a sharp fall. PlanSIP therefore keeps the shortlist inside
+        short-horizon categories and uses your risk choice to rank the more aggressive eligible options first.
+      </p>
+      <div class="risk-horizon-tags">
+        <span>Risk tolerance: ${escapeHTML(state.risk)}</span>
+        <span>Horizon: 1–3 years</span>
+        <span>Equity: excluded for this horizon</span>
+      </div>
+      <div class="risk-horizon-actions">
+        <span>Want equity-oriented choices?</span>
+        <button class="btn btn-ghost risk-horizon-change" type="button" data-change-longer-horizon>
+          Change to 5–10 years
+        </button>
+      </div>
+    </div>
+  `;
+
+  note.querySelector("[data-change-longer-horizon]")?.addEventListener("click", () => {
+    state.duration = "5-10";
+    renderChoices();
+    updateRiskHorizonGuidance();
+    scheduleRecommendationPrefetch(0);
+    els.durationChoices?.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+}
+
 function wireInputs() {
   els.goalSelect.addEventListener("change", event => {
     state.goal = event.target.value;
@@ -332,6 +391,7 @@ function wireInputs() {
     if (!button) return;
     state.duration = button.dataset.duration;
     renderChoices();
+    updateRiskHorizonGuidance();
     scheduleRecommendationPrefetch(500);
   });
   els.riskChoices.addEventListener("click", event => {
@@ -339,6 +399,7 @@ function wireInputs() {
     if (!button) return;
     state.risk = button.dataset.risk;
     renderChoices();
+    updateRiskHorizonGuidance();
     scheduleRecommendationPrefetch(500);
   });
   els.returnChoices.addEventListener("click", event => {
@@ -805,9 +866,17 @@ async function recommendFundsForProfile(profile, amount = 10000, options = {}) {
       const analysis = await getAnalysedFund(candidate);
       if (!analysis || !suitabilityAllowsFund(analysis, profile)) return null;
       analysis.profileFit = profileFitScore(analysis, profile);
+      const shortHighRiskBoost =
+        profile.duration?.id === "1-3" && (profile.risk === "High" || profile.risk === "Very High")
+          ? (/corporate bond|banking.*psu|banking and psu/.test(fundCategoryText(analysis)) ? 14
+            : /short duration|short term/.test(fundCategoryText(analysis)) ? 8
+            : /money market|ultra short/.test(fundCategoryText(analysis)) ? 3
+            : 0)
+          : 0;
       analysis.finalRank = analysis.score
         + analysis.profileFit
-        + returnPreferenceScore(analysis, profile.returnPref, profile);
+        + returnPreferenceScore(analysis, profile.returnPref, profile)
+        + shortHighRiskBoost;
       return analysis;
     } catch (_) {
       return null;
@@ -1121,6 +1190,12 @@ function renderRecommendations(funds, profile, amount) {
         <p class="section-copy">${escapeHTML(goal ? goal.title : "Your goal")} • ${escapeHTML(profile.duration.label)} • ${escapeHTML(profile.risk)} risk • ${escapeHTML(returnPreferenceLabel(profile.returnPref))} • ${escapeHTML(INR.format(amount))}/month</p>
       </div>
     </div>
+    ${profile.duration.id === "1-3" && (profile.risk === "High" || profile.risk === "Very High") ? `
+      <div class="short-horizon-result-note">
+        <strong>Best fit for your 1–3 year horizon</strong>
+        <span>You selected ${escapeHTML(profile.risk)} risk. PlanSIP is therefore ranking the relatively higher-risk choices available within short-horizon categories. Equity, mid-cap and small-cap funds remain excluded because the selected investment period is only 1–3 years.</span>
+      </div>
+    ` : ""}
     <div class="notice">Suitability-first analysis: time horizon is the hard gate, then goal and risk, while return preference only fine-tunes ranking. Funds below also passed historical NAV checks. This is educational analysis, not investment advice.</div>
     ${renderStudyMix(displayWeights, amount)}
     ${renderPeriodComparison(displayFunds)}
