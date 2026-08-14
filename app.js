@@ -655,7 +655,12 @@ async function findFunds() {
         return null;
       }
     }))).filter(Boolean);
-    const results = analysed
+
+    // Apply strict profile-based filtering to favour matching funds for risk/duration/return
+    const filteredByProfile = strictRecommendationFilter(analysed, profile);
+    const sourceList = filteredByProfile.length ? filteredByProfile : analysed;
+
+    const results = sourceList
       .filter(fund => fund.latest && isRecentNav(fund.latest.date))
       .sort((a, b) => b.finalRank - a.finalRank)
       .slice(0, 3);
@@ -705,7 +710,8 @@ function scheduleIdle(callback, timeout = 1000) {
 }
 
 function recommendationQueries(profile) {
-  const low = ["liquid direct growth", "short duration direct growth"];
+  // Low-risk should prefer debt/liquid queries — avoid 'growth' keywords that surface equity
+  const low = ["liquid direct", "short duration debt direct", "ultra short direct", "short duration direct"];
   const moderate = ["balanced advantage direct growth", "large cap direct growth", "index direct growth"];
   const high = ["flexi cap direct growth", "mid cap direct growth", "large and mid cap direct growth"];
   const veryHigh = ["small cap direct growth", "mid cap direct growth", "sectoral direct growth"];
@@ -733,21 +739,41 @@ function recommendationQueries(profile) {
 async function getRecommendationCandidates(profile) {
   const searches = await Promise.all(recommendationQueries(profile).map(async query => {
     try {
-      return (await searchFunds(query)).slice(0, 5);
+      return (await searchFunds(query)).slice(0, 6);
     } catch (_) {
       return [];
     }
   }));
   const all = searches.flat();
   const map = new Map();
+  // dedupe by family but keep multiple distinct funds where available (less aggressive)
   all.forEach(fund => {
-    const family = fund.schemeName.toLowerCase()
+    const family = (fund.schemeName || "").toLowerCase()
       .replace(/\b(direct|regular|growth|plan|option)\b/g, "")
       .replace(/[^a-z0-9]+/g, " ")
       .trim();
-    if (!map.has(family) || /direct/i.test(fund.schemeName)) map.set(family, fund);
+    if (!map.has(family)) map.set(family, []);
+    map.get(family).push(fund);
   });
-  return Array.from(map.values()).slice(0, 12);
+
+  // Flatten but preserve multiple options per family; compute quick match score to bias ordering
+  const candidates = [];
+  for (const [, group] of map) {
+    for (const fund of group) candidates.push(fund);
+  }
+
+  // Score candidates by quick profile text match before heavier analysis
+  const scored = candidates.map(fund => ({ fund, s: quickProfileMatchScore(fund, profile) }));
+  scored.sort((a, b) => b.s - a.s);
+
+  // Build a simple scored list of funds
+  const scoredFunds = scored.map(item => item.fund);
+
+  // Ensure the returned set respects the user's risk/return/duration by reordering buckets
+  const covered = ensureProfileCoverage(scoredFunds, profile);
+
+  // Limit and return
+  return covered.slice(0, 12);
 }
 
 function profileFitScore(fund, profile) {
@@ -781,6 +807,105 @@ function returnPreferenceScore(fund, preference) {
   const moderateBonus = /balanced|large cap|index|flexi|elss/.test(category) ? 10 : 0;
   const highRiskPenalty = /small cap|sector|thematic/.test(category) ? 10 : 0;
   return scale(longReturn, 0.02, 0.18) * 14 + (1 - scale(fund.volatility, 0.04, 0.24)) * 12 + moderateBonus - highRiskPenalty;
+}
+
+// Quick, cheap text-match score to bias candidate ordering before full analysis.
+function quickProfileMatchScore(fund, profile) {
+  const text = `${fund.schemeName || fund.name || ""} ${fund.schemeCategory || fund.category || ""}`.toLowerCase();
+  let score = 0;
+  // preference by direct/growth naming
+  if (/direct/.test(text)) score += 3;
+  if (/growth/.test(text)) score += 2;
+
+  // risk-based keywords
+  if (profile.risk === "Low") score += (/liquid|overnight|short|corporate|debt|money market|ultra short|gilt|g-sec/.test(text) ? 8 : 0);
+  if (profile.risk === "Moderate") score += (/hybrid|balanced|large cap|index|elss|flexi/.test(text) ? 5 : 0);
+  if (profile.risk === "High") score += (/flexi|large and mid|large & mid|mid cap|value|equity|mid-cap/.test(text) ? 6 : 0);
+  if (profile.risk === "Very High") score += (/small cap|sector|thematic|mid cap|small-cap/.test(text) ? 7 : 0);
+
+  // return preference
+  if (profile.returnPref === "stable") score += (/liquid|short|debt|corporate|balanced|large cap|index|gilt|g-sec/.test(text) ? 6 : 0);
+  if (profile.returnPref === "high") score += (/small cap|mid cap|flexi|focused|value|sector|thematic/.test(text) ? 6 : 0);
+
+  // duration hints
+  if (profile.duration && (profile.duration.id === "1-3")) score += (/short|liquid|overnight/.test(text) ? 3 : 0);
+  if (profile.duration && (profile.duration.id === "10+")) score += (/elss|nifty|index|large cap/.test(text) ? 3 : 0);
+
+  return score;
+}
+
+// Infer risk bucket from text for raw candidates (before full analysis)
+function textRiskLabel(candidate) {
+  const text = `${candidate.schemeName || candidate.name || ""} ${(candidate.schemeCategory || candidate.category || "").toLowerCase()}`.toLowerCase();
+  if (/liquid|overnight|money market|short duration|ultra short|corporate bond|corporate|debt|gilt|g-sec/.test(text)) return "Low";
+  if (/balanced|hybrid|large cap|index|debt/.test(text)) return "Moderate";
+  if (/mid cap|flexi|large and mid|large & mid|equity/.test(text)) return "High";
+  if (/small cap|sector|thematic/.test(text)) return "Very High";
+  return "Moderate"; // default fallback
+}
+
+// Ensure candidate list has reasonable coverage for the profile (prefer correct buckets)
+function ensureProfileCoverage(candidates, profile) {
+  const buckets = { Low: [], Moderate: [], High: [], "Very High": [] };
+  for (const c of candidates) buckets[textRiskLabel(c)].push(c);
+
+  const ordered = [];
+  // preference order based on profile.risk and returnPref
+  if (profile.risk === "Low" || profile.returnPref === "stable") {
+    ordered.push(...buckets.Low, ...buckets.Moderate, ...buckets.High, ...buckets["Very High"]);
+  } else if (profile.risk === "Moderate") {
+    ordered.push(...buckets.Moderate, ...buckets.Low, ...buckets.High, ...buckets["Very High"]);
+  } else if (profile.risk === "High" || profile.returnPref === "high") {
+    ordered.push(...buckets.High, ...buckets["Very High"], ...buckets.Moderate, ...buckets.Low);
+  } else {
+    ordered.push(...candidates);
+  }
+
+  // Deduplicate while preserving order, prefer unique family keys
+  const final = [];
+  const seen = new Set();
+  for (const fund of ordered) {
+    const family = (fund.schemeName || "").toLowerCase().replace(/\b(direct|regular|growth|plan|option)\b/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+    if (!seen.has(family)) {
+      final.push(fund);
+      seen.add(family);
+    }
+  }
+  return final;
+}
+
+// After analysis, enforce stricter profile-aligned filtering. Returns funds matching stricter criteria.
+function strictRecommendationFilter(analysedFunds, profile) {
+  if (!Array.isArray(analysedFunds) || analysedFunds.length === 0) return [];
+  const filtered = analysedFunds.filter(fund => {
+    const text = `${fund.category || ""} ${fund.type || ""} ${fund.name || ""}`.toLowerCase();
+    const textRisk = textRiskLabel(fund);
+    const longReturn = firstNumber(fund.returns && (fund.returns.y10 || fund.returns.y5 || fund.returns.y3 || fund.returns.y1));
+    // Base rejects for obviously mismatched categories
+    if (profile.risk === "Low") {
+      // prefer Low/Moderate buckets, exclude small-cap/sector/thematic
+      if (/small cap|sector|thematic/.test(text)) return false;
+      if (textRisk === "Very High" || textRisk === "High") return false;
+      // prefer low volatility when stable preference
+      if (profile.returnPref === "stable" && fund.volatility != null && fund.volatility > 0.18) return false;
+    }
+    if (profile.risk === "Moderate") {
+      // allow Moderate or Low; deprioritize Very High
+      if (textRisk === "Very High") return false;
+    }
+    if (profile.risk === "High" || profile.returnPref === "high") {
+      // allow High/Very High; require reasonable long-term return if category ambiguous
+      if (textRisk === "Low" && (longReturn == null || longReturn < 0.04)) return false;
+    }
+    // duration-based constraints
+    if (profile.duration && profile.duration.id === "1-3") {
+      if (!/liquid|overnight|short|debt|ultra short|short duration/.test(text) && profile.risk !== "High") return false;
+    }
+    // If stable return pref, avoid high-volatility funds
+    if (profile.returnPref === "stable" && fund.volatility != null && fund.volatility > 0.20) return false;
+    return true;
+  });
+  return filtered;
 }
 
 function renderRecommendations(funds, profile, amount) {
