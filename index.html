@@ -45,8 +45,8 @@
       </div>
       <nav class="tabs" aria-label="Primary navigation">
         <button class="tab active" data-tab="find">Find Funds</button>
-        <button class="tab" data-tab="salary">Salary Planner</button>
         <button class="tab" data-tab="sipcalc">SIP Calculator</button>
+        <button class="tab" data-tab="salary">Salary Planner</button>
         <button class="tab" data-tab="loan">Loan Freedom</button>
         <button class="tab" data-tab="freedom">Freedom Goals</button>
         <button class="tab" data-tab="corpus">Corpus</button>
@@ -159,6 +159,58 @@
       <div id="recommendationResults"></div>
     </section>
 
+    <section id="sipcalc" class="section" aria-labelledby="sipcalc-title">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="sipcalc-title">SIP Calculator</h2>
+          <p class="section-copy">Estimate monthly SIP growth with simple assumptions. For real historical fund replay, use SIP Replay.</p>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="panel wizard">
+          <div class="form-row">
+            <div>
+              <label for="sipCalcAmount">Monthly SIP</label>
+              <input class="input" id="sipCalcAmount" inputmode="numeric" value="10000">
+            </div>
+            <div>
+              <label for="sipCalcYears">Investment years</label>
+              <input class="input" id="sipCalcYears" inputmode="decimal" value="10">
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label for="sipCalcReturn">Expected annual return (%)</label>
+              <select class="input" id="sipCalcReturn">
+                <option value="8">Conservative 8%</option>
+                <option value="10">Balanced 10%</option>
+                <option value="12" selected>Growth 12%</option>
+                <option value="15">High growth 15%</option>
+              </select>
+            </div>
+            <div>
+              <label for="sipCalcStepUp">Yearly SIP step-up</label>
+              <select class="input" id="sipCalcStepUp">
+                <option value="0" selected>No step-up</option>
+                <option value="5">5% yearly</option>
+                <option value="10">10% yearly</option>
+                <option value="15">15% yearly</option>
+              </select>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary" id="runSipCalcBtn">Calculate SIP</button>
+            <a class="btn btn-secondary" href="#sip">Replay with real funds</a>
+          </div>
+          <div id="sipCalcError"></div>
+          <div class="notice">This calculator uses assumed returns. It is not a guarantee, prediction, or investment advice.</div>
+        </div>
+        <div id="sipCalcResults" class="panel">
+          <div class="empty">Enter your monthly SIP, years, and expected return to estimate a future value.</div>
+        </div>
+      </div>
+    </section>
+
     <section id="salary" class="section" aria-labelledby="salary-title">
       <div class="section-head">
         <div>
@@ -237,58 +289,6 @@
         </div>
         <div id="salaryResults" class="panel">
           <div class="empty">Enter salary and expenses to estimate monthly investable surplus.</div>
-        </div>
-      </div>
-    </section>
-
-    <section id="sipcalc" class="section" aria-labelledby="sipcalc-title">
-      <div class="section-head">
-        <div>
-          <h2 class="section-title" id="sipcalc-title">SIP Calculator</h2>
-          <p class="section-copy">Estimate monthly SIP growth with simple assumptions. For real historical fund replay, use SIP Replay.</p>
-        </div>
-      </div>
-      <div class="two-col">
-        <div class="panel wizard">
-          <div class="form-row">
-            <div>
-              <label for="sipCalcAmount">Monthly SIP</label>
-              <input class="input" id="sipCalcAmount" inputmode="numeric" value="10000">
-            </div>
-            <div>
-              <label for="sipCalcYears">Investment years</label>
-              <input class="input" id="sipCalcYears" inputmode="decimal" value="10">
-            </div>
-          </div>
-          <div class="form-row">
-            <div>
-              <label for="sipCalcReturn">Expected annual return (%)</label>
-              <select class="input" id="sipCalcReturn">
-                <option value="8">Conservative 8%</option>
-                <option value="10">Balanced 10%</option>
-                <option value="12" selected>Growth 12%</option>
-                <option value="15">High growth 15%</option>
-              </select>
-            </div>
-            <div>
-              <label for="sipCalcStepUp">Yearly SIP step-up</label>
-              <select class="input" id="sipCalcStepUp">
-                <option value="0" selected>No step-up</option>
-                <option value="5">5% yearly</option>
-                <option value="10">10% yearly</option>
-                <option value="15">15% yearly</option>
-              </select>
-            </div>
-          </div>
-          <div class="actions">
-            <button class="btn btn-primary" id="runSipCalcBtn">Calculate SIP</button>
-            <a class="btn btn-secondary" href="#sip">Replay with real funds</a>
-          </div>
-          <div id="sipCalcError"></div>
-          <div class="notice">This calculator uses assumed returns. It is not a guarantee, prediction, or investment advice.</div>
-        </div>
-        <div id="sipCalcResults" class="panel">
-          <div class="empty">Enter your monthly SIP, years, and expected return to estimate a future value.</div>
         </div>
       </div>
     </section>
