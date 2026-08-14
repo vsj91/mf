@@ -649,6 +649,7 @@ function returnPreferenceScore(fund, preference) {
 function renderRecommendations(funds, profile, amount) {
   const goal = goals.find(g => g.id === profile.goal);
   const displayFunds = selectedStudyFunds(funds, amount);
+  const displayWeights = studyMixWeights(displayFunds, amount);
   state.lastRecommendations = displayFunds;
   els.recommendationResults.innerHTML = `
     <div class="section-head" style="margin-top:24px">
@@ -658,10 +659,10 @@ function renderRecommendations(funds, profile, amount) {
       </div>
     </div>
     <div class="notice">Based on your selected goal, time horizon, risk level, and return preference, here are funds whose category and historical NAV behavior match your filters. This is not investment advice and does not predict future returns.</div>
-    ${renderStudyMix(displayFunds, amount)}
+    ${renderStudyMix(displayWeights, amount)}
     ${renderPeriodComparison(displayFunds)}
     <div class="results-grid">
-      ${displayFunds.map((fund, index) => renderFundCard(fund, profile, amount, index === 0)).join("")}
+      ${displayWeights.map((item, index) => renderFundCard(item.fund, profile, item.monthlyAmount, index === 0)).join("")}
     </div>
     <div class="notice">Past performance does not guarantee future returns. The Fund Score is an analytical score, not investment advice.</div>
   `;
@@ -826,8 +827,7 @@ function renderReturnChartRows(funds, periodId) {
   }).join("");
 }
 
-function renderStudyMix(funds, amount) {
-  const weights = studyMixWeights(funds, amount);
+function renderStudyMix(weights, amount) {
   const colors = ["#007a5a", "#f6b944", "#4f8cff", "#d95f59"];
   let cursor = 0;
   const stops = weights.map((item, index) => {
@@ -846,7 +846,7 @@ function renderStudyMix(funds, amount) {
             <div class="mix-item">
               <span class="mix-swatch" style="background:${colors[index % colors.length]}"></span>
               <strong title="${escapeAttr(item.fund.name)}">${escapeHTML(shortName(item.fund.name))}</strong>
-              <span class="mix-percent">${item.percent}% • ${escapeHTML(INR.format(Math.round(amount * item.percent / 100)))}/mo</span>
+              <span class="mix-percent">${item.percent}% • ${escapeHTML(INR.format(item.monthlyAmount))}/mo</span>
             </div>
           `).join("")}
         </div>
@@ -856,7 +856,7 @@ function renderStudyMix(funds, amount) {
 }
 
 function studyMixWeights(funds, amount) {
-  if (funds.length === 1) return [{ fund: funds[0], percent: 100 }];
+  if (funds.length === 1) return [{ fund: funds[0], percent: 100, monthlyAmount: amount }];
   const raw = funds.map(fund => ({
     fund,
     weight: Math.max(12, fund.score + (fund.profileFit || 0) - riskPenaltyForMix(fund))
@@ -866,7 +866,7 @@ function studyMixWeights(funds, amount) {
   return raw.map((item, index) => {
     const percent = index === raw.length - 1 ? remaining : Math.max(10, Math.round(item.weight / total * 100));
     remaining -= percent;
-    return { fund: item.fund, percent };
+    return { fund: item.fund, percent, monthlyAmount: Math.round(amount * percent / 100) };
   });
 }
 
