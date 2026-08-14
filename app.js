@@ -555,7 +555,8 @@ function scheduleIdle(callback, timeout = 1000) {
 }
 
 function recommendationQueries(profile) {
-  const low = ["liquid direct growth", "short duration direct growth"];
+  // Low-risk should prefer debt/liquid queries — avoid 'growth' keywords that surface equity
+  const low = ["liquid direct", "short duration debt direct", "ultra short direct", "short duration direct"];
   const moderate = ["balanced advantage direct growth", "large cap direct growth", "index direct growth"];
   const high = ["flexi cap direct growth", "mid cap direct growth", "large and mid cap direct growth"];
   const veryHigh = ["small cap direct growth", "mid cap direct growth", "sectoral direct growth"];
