@@ -130,6 +130,7 @@
         <button class="tab" data-tab="compare">Compare</button>
         <button class="tab" data-tab="popular">Popular</button>
         <button class="tab" data-tab="learn">Learn</button>
+        <button class="tab" data-tab="mfapi">MFapi Query</button>
       </nav>
       <div class="language-wrap" aria-label="Language selector">
         <select class="language-select" id="languageSelect" aria-label="Translate app language">
@@ -818,6 +819,26 @@
       </details>
     </section>
   </main>
+
+  <section id="mfapi" class="section" aria-labelledby="mfapi-title">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="mfapi-title">MFapi Query</h2>
+          <p class="section-copy">Run direct MFapi searches or fetch scheme details by scheme code for debugging and exploration.</p>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="search-box">
+          <label for="mfapiQueryInput">Search query or scheme code</label>
+          <input class="input" id="mfapiQueryInput" placeholder="e.g., liquid direct or 118560" autocomplete="off">
+          <div class="status" id="mfapiStatus"><span class="spinner"></span><span>Querying MFapi...</span></div>
+          <div class="search-results" id="mfapiResults"></div>
+        </div>
+        <div class="actions" style="margin-top:12px">
+          <button class="btn btn-primary" id="mfapiQueryBtn">Run MFapi Query</button>
+        </div>
+      </div>
+    </section>
 
   <footer class="site-footer">
     <nav aria-label="Site information">

@@ -88,7 +88,7 @@ function cacheEls() {
     "freedomCurrent", "freedomSip", "freedomReturn", "runFreedomBtn", "freedomError", "freedomResults",
     "corpusCurrent", "corpusSip", "corpusLumpsum", "corpusYears", "corpusReturn", "corpusStepUp",
     "runCorpusBtn", "corpusError", "corpusResults", "metalType", "metalView", "runMetalsBtn",
-    "metalStatus", "metalError", "metalResults", "runPopularBtn", "popularStatus", "popularError", "popularResults"
+    "metalStatus", "metalError", "metalResults",     "runPopularBtn", "popularStatus", "popularError", "popularResults", "mfapiQueryInput", "mfapiQueryBtn", "mfapiStatus", "mfapiResults"
   ].forEach(id => { els[id] = document.getElementById(id); });
 }
 
@@ -301,6 +301,8 @@ function wireInputs() {
   els.runCorpusBtn.addEventListener("click", runCorpusCalculator);
   els.runMetalsBtn.addEventListener("click", runMetalTracker);
   els.runPopularBtn.addEventListener("click", () => loadMostInvestedStudyFunds());
+  els.mfapiQueryBtn?.addEventListener("click", () => runMfapiQuery());
+  els.mfapiQueryInput?.addEventListener("keydown", e => { if (e.key === 'Enter') runMfapiQuery(); });
   runSipCalculator(false);
 }
 
@@ -524,7 +526,7 @@ async function findFunds() {
     const sourceList = filteredByProfile.length ? filteredByProfile : analysed;
 
     const results = sourceList
-      .filter(fund => fund.latest && isRecentNav(fund.latest.date))
+      .filter(fund => fund.latest)
       .sort((a, b) => b.finalRank - a.finalRank)
       .slice(0, 3);
     if (!results.length) throw new Error("MFapi returned insufficient recent NAV history for the shortlisted funds. Try a different risk or duration.");
@@ -552,6 +554,83 @@ function scheduleRecommendationPrefetch(timeout = 1000) {
 }
 
 function scheduleIdle(callback, timeout = 1000) {
+  if (typeof runMfapiQuery === 'undefined') {
+    // placeholder to ensure function exists when scripts reload in dev
+  }
+  if ("requestIdleCallback" in window) {
+    window.requestIdleCallback(callback, { timeout });
+    return;
+  }
+  window.setTimeout(callback, timeout);
+}
+
+// MFapi query tools: allow direct searching or fetching scheme details for debugging and exploration.
+async function runMfapiQuery() {
+  const q = (els.mfapiQueryInput?.value || "").trim();
+  if (!q) {
+    els.mfapiResults.innerHTML = `<div class="empty">Enter a search term or scheme code.</div>`;
+    return;
+  }
+  setStatus(els.mfapiStatus, true);
+  els.mfapiResults.innerHTML = "";
+  try {
+    // If numeric, treat as scheme code and fetch details
+    if (/^\d+$/.test(q)) {
+      const detail = await getFundDetails(q);
+      if (!detail || !detail.latest) {
+        els.mfapiResults.innerHTML = `<div class="error">No NAV history found for scheme code ${escapeHTML(q)}.</div>`;
+      } else {
+        els.mfapiResults.innerHTML = renderFundDetail(detail);
+      }
+    } else {
+      const funds = await searchFunds(q);
+      if (!funds || !funds.length) {
+        els.mfapiResults.innerHTML = `<div class="empty">No results from MFapi for '${escapeHTML(q)}'.</div>`;
+      } else {
+        els.mfapiResults.innerHTML = `<div class="search-results-box">${funds.slice(0,20).map(f=> `<button class="search-item" type="button" data-code="${escapeAttr(f.schemeCode)}">${escapeHTML(cleanName(f.schemeName))} <span class="pill">Fetch</span></button>`).join('')}</div>`;
+        // wire buttons
+        els.mfapiResults.querySelectorAll('.search-item').forEach(btn => btn.addEventListener('click', async () => {
+          const code = btn.dataset.code;
+          setStatus(els.mfapiStatus, true);
+          try {
+            const detail = await getFundDetails(code);
+            els.mfapiResults.innerHTML = renderFundDetail(detail);
+          } catch (e) {
+            els.mfapiResults.innerHTML = `<div class="error">Could not fetch details for ${escapeHTML(code)}.</div>`;
+          } finally { setStatus(els.mfapiStatus, false); }
+        }));
+      }
+    }
+  } catch (error) {
+    els.mfapiResults.innerHTML = `<div class="error">${escapeHTML(error.message || 'MFapi query failed.')}</div>`;
+  } finally {
+    setStatus(els.mfapiStatus, false);
+  }
+}
+
+function renderFundDetail(detail) {
+  if (!detail) return `<div class="error">No data</div>`;
+  const latest = detail.latest || {}; 
+  const nav = latest.nav != null ? formatNav(latest.nav) : 'N/A';
+  const latestDate = latest.date ? formatDate(latest.date) : 'N/A';
+  const returns = detail.returns || {};
+  const volatility = detail.volatility != null ? formatPercent(detail.volatility) : 'N/A';
+  const historyYears = detail.historyYears != null ? `${detail.historyYears.toFixed(1)} yrs` : 'N/A';
+  return `
+    <div class="panel">
+      <h3>${escapeHTML(detail.name || detail.meta?.scheme_name || 'Fund')}</h3>
+      <div class="meta-line">Category: ${escapeHTML(detail.category || detail.meta?.scheme_category || 'N/A')}</div>
+      <div class="meta-line">Latest NAV: ${escapeHTML(nav)} on ${escapeHTML(latestDate)}</div>
+      <div class="metrics primary" style="margin-top:12px">
+        <div class="metric"><small>1Y</small><strong>${escapeHTML(formatPercent(returns.y1))}</strong></div>
+        <div class="metric"><small>3Y</small><strong>${escapeHTML(formatPercent(returns.y3))}</strong></div>
+        <div class="metric"><small>5Y</small><strong>${escapeHTML(formatPercent(returns.y5))}</strong></div>
+        <div class="metric"><small>Volatility</small><strong>${escapeHTML(volatility)}</strong></div>
+      </div>
+      <div style="margin-top:12px">Available NAV history: ${escapeHTML(historyYears)}</div>
+    </div>
+  `;
+}
   if ("requestIdleCallback" in window) {
     window.requestIdleCallback(callback, { timeout });
     return;
@@ -839,7 +918,7 @@ async function loadMostInvestedStudyFunds(excludeCodes) {
         return null;
       }
     }))).filter(Boolean)
-      .filter(fund => fund.latest && isRecentNav(fund.latest.date))
+      .filter(fund => fund.latest)
       .sort((a, b) => b.popularStudyRank - a.popularStudyRank)
       .slice(0, 4);
     box.innerHTML = renderMostInvestedStudyFunds(analysed);
@@ -1008,7 +1087,8 @@ function riskPenaltyForMix(fund) {
 function isRecentNav(date) {
   if (!(date instanceof Date)) return false;
   const ageDays = (Date.now() - date.getTime()) / (24 * 60 * 60 * 1000);
-  return ageDays <= 180;
+  // Relaxed cutoff to 365 days so funds with slightly older NAVs are still considered
+  return ageDays <= 365;
 }
 
 function renderFundCard(fund, profile, best) {
@@ -1660,10 +1740,10 @@ async function loadLoanFundSuggestions(input, plan) {
     }))).filter(Boolean);
     const count = suggestedFundCount(input.sip, analysed.length);
     const funds = analysed
-      .filter(fund => fund.latest && isRecentNav(fund.latest.date))
+      .filter(fund => fund.latest)
       .sort((a, b) => b.finalRank - a.finalRank)
       .slice(0, count);
-    if (!funds.length) throw new Error("MFapi did not return enough recent NAV history for this loan profile.");
+    if (!funds.length) throw new Error("MFapi did not return any analysable funds for this loan profile.");
     box.innerHTML = renderLoanFundSuggestions(funds, profile, input, plan);
   } catch (error) {
     box.innerHTML = `
@@ -1836,10 +1916,10 @@ async function loadFreedomFundSuggestions(title, input, result) {
     }))).filter(Boolean);
     const count = suggestedFundCount(input.sip, analysed.length);
     const funds = analysed
-      .filter(fund => fund.latest && isRecentNav(fund.latest.date))
+      .filter(fund => fund.latest)
       .sort((a, b) => b.finalRank - a.finalRank)
       .slice(0, count);
-    if (!funds.length) throw new Error("MFapi did not return enough NAV history for this goal profile.");
+    if (!funds.length) throw new Error("MFapi did not return any analysable funds for this goal profile.");
     box.innerHTML = renderFreedomFundSuggestions(funds, profile, input);
   } catch (error) {
     box.innerHTML = `
@@ -1975,7 +2055,7 @@ async function runMetalTracker() {
     const analysed = (await Promise.all(candidates.slice(0, 12).map(async candidate => {
       try {
         const analysis = await getAnalysedFund(candidate);
-        if (!analysis || !analysis.latest || !isRecentNav(analysis.latest.date)) return null;
+        if (!analysis || !analysis.latest) return null;
         analysis.metalRank = analysis.score + (/direct/i.test(analysis.name) ? 8 : 0) + (/growth/i.test(analysis.name) ? 5 : 0);
         return analysis;
       } catch (_) {
