@@ -280,6 +280,49 @@ function renderChoices() {
   els.returnChoices.innerHTML = returnPrefs.map(pref => `
     <button class="segment ${pref.id === state.returnPref ? "selected" : ""}" data-return-pref="${escapeAttr(pref.id)}" type="button">${escapeHTML(pref.label)}</button>
   `).join("");
+  renderHorizonRiskGuidance();
+}
+
+function renderHorizonRiskGuidance() {
+  if (!els.riskChoices) return;
+  let note = document.getElementById("horizonRiskGuidance");
+  const shortHighRisk = state.duration === "1-3" && (state.risk === "High" || state.risk === "Very High");
+
+  if (!shortHighRisk) {
+    note?.remove();
+    return;
+  }
+
+  if (!note) {
+    note = document.createElement("div");
+    note.id = "horizonRiskGuidance";
+    els.riskChoices.insertAdjacentElement("afterend", note);
+  }
+
+  note.className = "horizon-risk-note";
+  note.innerHTML = `
+    <div class="horizon-risk-icon" aria-hidden="true">🛡️</div>
+    <div class="horizon-risk-content">
+      <div class="horizon-risk-title">${escapeHTML(state.risk)} risk selected — but your time horizon is short</div>
+      <p>You are comfortable with more market movement, but 1–3 years may be too short to recover from a major equity fall. PlanSIP therefore keeps equity, mid-cap and small-cap funds out of this shortlist.</p>
+      <div class="horizon-risk-tags" aria-label="How PlanSIP interprets these choices">
+        <span>Your risk: <strong>${escapeHTML(state.risk)}</strong></span>
+        <span>Horizon: <strong>1–3 years</strong></span>
+        <span>Focus: <strong>higher-risk options within short-term categories</strong></span>
+      </div>
+      <div class="horizon-risk-actions">
+        <span>Want equity growth options?</span>
+        <button class="btn btn-ghost horizon-change-btn" id="extendHorizonBtn" type="button">Change to 5–10 years</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("extendHorizonBtn")?.addEventListener("click", () => {
+    state.duration = "5-10";
+    renderChoices();
+    scheduleRecommendationPrefetch(200);
+    els.durationChoices?.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
 }
 
 function wireTabs() {
@@ -366,16 +409,16 @@ function wireInputs() {
   });
   els.helpPrevBtn.addEventListener("click", () => moveHelpStep(-1));
   els.helpNextBtn.addEventListener("click", () => moveHelpStep(1));
-  els.runSipCalcBtn.addEventListener("click", () => runDesktopButtonLoading(els.runSipCalcBtn, "Calculating SIP...", runSipCalculator));
-  els.runSipBtn.addEventListener("click", () => runDesktopButtonLoading(els.runSipBtn, "Running SIP replay...", runSipChallenge));
-  els.runCompareBtn.addEventListener("click", () => runDesktopButtonLoading(els.runCompareBtn, "Comparing funds...", runCompare));
-  els.runLoanBtn.addEventListener("click", () => runDesktopButtonLoading(els.runLoanBtn, "Calculating plan...", runLoanPlanner));
+  els.runSipCalcBtn.addEventListener("click", () => runWithButtonLoading(els.runSipCalcBtn, "Calculating SIP...", () => runSipCalculator()));
+  els.runSipBtn.addEventListener("click", () => runWithButtonLoading(els.runSipBtn, "Running SIP replay...", runSipChallenge));
+  els.runCompareBtn.addEventListener("click", () => runWithButtonLoading(els.runCompareBtn, "Comparing funds...", runCompare));
+  els.runLoanBtn.addEventListener("click", () => runWithButtonLoading(els.runLoanBtn, "Calculating plan...", runLoanPlanner));
   els.freedomGoalType.addEventListener("change", updateFreedomFields);
-  els.runFreedomBtn.addEventListener("click", () => runDesktopButtonLoading(els.runFreedomBtn, "Calculating goal...", runFreedomGoals));
-  els.runSalaryBtn.addEventListener("click", () => runDesktopButtonLoading(els.runSalaryBtn, "Planning salary...", runSalaryPlanner));
-  els.runCorpusBtn.addEventListener("click", () => runDesktopButtonLoading(els.runCorpusBtn, "Calculating corpus...", runCorpusCalculator));
-  els.runMetalsBtn.addEventListener("click", () => runDesktopButtonLoading(els.runMetalsBtn, "Loading metal funds...", runMetalTracker));
-  els.runPopularBtn.addEventListener("click", () => runDesktopButtonLoading(els.runPopularBtn, "Loading popular funds...", loadMostInvestedStudyFunds));
+  els.runFreedomBtn.addEventListener("click", () => runWithButtonLoading(els.runFreedomBtn, "Calculating goal...", runFreedomGoals));
+  els.runSalaryBtn.addEventListener("click", () => runWithButtonLoading(els.runSalaryBtn, "Planning salary...", runSalaryPlanner));
+  els.runCorpusBtn.addEventListener("click", () => runWithButtonLoading(els.runCorpusBtn, "Calculating corpus...", runCorpusCalculator));
+  els.runMetalsBtn.addEventListener("click", () => runWithButtonLoading(els.runMetalsBtn, "Loading metal funds...", runMetalTracker));
+  els.runPopularBtn.addEventListener("click", () => runWithButtonLoading(els.runPopularBtn, "Loading popular funds...", loadMostInvestedStudyFunds));
   runSipCalculator(false);
 }
 
@@ -472,24 +515,28 @@ function setFindLoading(isLoading) {
   setStatus(els.findStatus, isLoading);
 }
 
-function runDesktopButtonLoading(button, loadingText, action) {
-  // Preserve the original mobile behavior exactly.
-  if (!window.matchMedia("(min-width: 881px)").matches) return action();
-  if (!button) return action();
+function setButtonLoading(button, isLoading, loadingText) {
+  if (!button) return;
+  if (!button.dataset.idleLabel) button.dataset.idleLabel = button.innerHTML;
+  button.disabled = Boolean(isLoading);
+  button.setAttribute("aria-busy", String(Boolean(isLoading)));
+  button.innerHTML = isLoading
+    ? `<span class="spinner" aria-hidden="true"></span><span>${escapeHTML(loadingText)}</span>`
+    : button.dataset.idleLabel;
+}
 
-  const idleHTML = button.innerHTML;
-  const wasDisabled = button.disabled;
-  button.disabled = true;
-  button.setAttribute("aria-busy", "true");
-  button.innerHTML = `<span class="spinner" aria-hidden="true"></span><span>${escapeHTML(loadingText)}</span>`;
+function nextPaint() {
+  return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+}
 
-  return Promise.resolve()
-    .then(action)
-    .finally(() => {
-      button.innerHTML = idleHTML;
-      button.disabled = wasDisabled;
-      button.setAttribute("aria-busy", "false");
-    });
+async function runWithButtonLoading(button, loadingText, action) {
+  setButtonLoading(button, true, loadingText);
+  await nextPaint();
+  try {
+    return await action();
+  } finally {
+    setButtonLoading(button, false, loadingText);
+  }
 }
 
 function scrollToResults(target) {
@@ -815,7 +862,7 @@ async function recommendFundsForProfile(profile, amount = 10000, options = {}) {
   // an unsuitable category when the time horizon hard gate rejects it.
   const filtered = strictRecommendationFilter(analysed, profile)
     .filter(fund => fund.latest && isRecentNav(fund.latest.date))
-    .sort((a, b) => b.finalRank - a.finalRank);
+    .sort((a, b) => recommendationSortScore(b, profile) - recommendationSortScore(a, profile));
 
   if (!filtered.length) {
     throw new Error("MFapi did not return enough suitable funds with recent NAV history for this profile.");
@@ -824,6 +871,23 @@ async function recommendFundsForProfile(profile, amount = 10000, options = {}) {
   const diversified = diversifyRecommendationResults(filtered, requestedCount);
   if (options.hydrateHistory) return hydrateFundsWithHistory(diversified);
   return diversified;
+}
+
+
+function recommendationSortScore(fund, profile) {
+  let score = fund.finalRank || 0;
+  if (profile.duration?.id !== "1-3" || (profile.risk !== "High" && profile.risk !== "Very High")) return score;
+
+  const text = fundCategoryText(fund);
+  // Within the 1–3 year safety universe, a high risk selection should still matter.
+  // Prefer the relatively more adventurous eligible debt categories before cash-like funds.
+  if (/banking.*psu|banking and psu/.test(text)) score += 22;
+  else if (/corporate bond/.test(text)) score += 20;
+  else if (/short duration|short term/.test(text)) score += 14;
+  else if (/ultra short/.test(text)) score += 8;
+  else if (/money market/.test(text)) score += 4;
+  else if (/liquid|overnight/.test(text)) score += 0;
+  return score;
 }
 
 function recommendationCategoryBucket(fund) {
@@ -1117,7 +1181,7 @@ function renderRecommendations(funds, profile, amount) {
         <p class="section-copy">${escapeHTML(goal ? goal.title : "Your goal")} • ${escapeHTML(profile.duration.label)} • ${escapeHTML(profile.risk)} risk • ${escapeHTML(returnPreferenceLabel(profile.returnPref))} • ${escapeHTML(INR.format(amount))}/month</p>
       </div>
     </div>
-    <div class="notice">Suitability-first analysis: time horizon is the hard gate, then goal and risk, while return preference only fine-tunes ranking. Funds below also passed historical NAV checks. This is educational analysis, not investment advice.</div>
+    ${renderRecommendationProfileNotice(profile)}
     ${renderStudyMix(displayWeights, amount)}
     ${renderPeriodComparison(displayFunds)}
     <div class="results-grid">
@@ -1139,6 +1203,28 @@ function renderRecommendations(funds, profile, amount) {
     button.addEventListener("click", () => updateFundChart(button));
   });
   els.recommendationResults.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+
+function renderRecommendationProfileNotice(profile) {
+  const shortHighRisk = profile.duration?.id === "1-3" && (profile.risk === "High" || profile.risk === "Very High");
+  if (!shortHighRisk) {
+    return `<div class="notice">Suitability-first analysis: time horizon is the hard gate, then goal and risk, while return preference only fine-tunes ranking. Funds below also passed historical NAV checks. This is educational analysis, not investment advice.</div>`;
+  }
+  return `
+    <div class="short-horizon-result-note">
+      <div class="short-horizon-result-head">
+        <span class="short-horizon-result-icon" aria-hidden="true">⏱️</span>
+        <div>
+          <strong>Best fit for your 1–3 year horizon</strong>
+          <p>You selected <b>${escapeHTML(profile.risk)} risk</b>. PlanSIP is using that preference to rank relatively higher-risk choices <em>within short-horizon-suitable categories</em>. Pure equity, mid-cap and small-cap funds remain excluded because the selected time period is only 1–3 years.</p>
+        </div>
+      </div>
+      <div class="short-horizon-result-legend">
+        <span><b>Your risk tolerance</b> = how much volatility you can accept</span>
+        <span><b>Fund category risk</b> = the fund's own risk level</span>
+      </div>
+    </div>`;
 }
 
 function selectedStudyFunds(funds, amount) {
@@ -1362,7 +1448,8 @@ function renderFundCard(fund, profile, amount, best) {
           <div class="meta-line">${escapeHTML(metaLabel(fund))}</div>
           <div class="quick-label">
             ${best ? `<span class="pill">Closest study match</span>` : ""}
-            <span class="pill">Risk: ${escapeHTML(riskLabel(fund))}</span>
+            ${profile.duration?.id === "1-3" ? `<span class="pill pill-horizon">Short-horizon fit</span>` : ""}
+            <span class="pill">Fund risk: ${escapeHTML(riskLabel(fund))}</span>
           </div>
         </div>
         <div class="score-ring" style="--p:${fund.score}"><span>${fund.score}</span></div>
@@ -1604,6 +1691,11 @@ function fundScore(metrics) {
 }
 
 function whyMatches(fund, profile) {
+  const shortHighRisk = profile.duration?.id === "1-3" && (profile.risk === "High" || profile.risk === "Very High");
+  if (shortHighRisk) {
+    return `Why shown: you selected ${profile.risk.toLowerCase()} risk tolerance, but your 1–3 year horizon takes priority. This ${riskLabel(fund).toLowerCase()}-risk fund category is an eligible short-horizon option; higher-risk eligible debt categories are ranked first where historical data supports them.`;
+  }
+
   const bits = [];
   bits.push(`${profile.duration.label} horizon suitability`);
   if (profile.goal === "emergency") bits.push("liquidity-first emergency-fund fit");
@@ -1728,7 +1820,6 @@ async function runSipChallenge() {
     return;
   }
   setStatus(els.sipStatus, true);
-  els.runSipBtn.disabled = true;
   try {
     const amount = readMoney(els.sipAmount.value) || 10000;
     const years = Number(els.sipYears.value);
@@ -1745,7 +1836,6 @@ async function runSipChallenge() {
     showError(els.sipError, error.message || "Could not complete SIP simulation.");
   } finally {
     setStatus(els.sipStatus, false);
-    els.runSipBtn.disabled = false;
   }
 }
 
@@ -1831,7 +1921,6 @@ async function runCompare() {
     return;
   }
   setStatus(els.compareStatus, true);
-  els.runCompareBtn.disabled = true;
   try {
     const results = [];
     for (const fund of state.compareSelected) {
@@ -1846,7 +1935,6 @@ async function runCompare() {
     showError(els.compareError, error.message || "Could not compare the selected funds.");
   } finally {
     setStatus(els.compareStatus, false);
-    els.runCompareBtn.disabled = false;
   }
 }
 
@@ -2244,7 +2332,6 @@ async function runSalaryPlanner() {
     showError(els.salaryError, error.message || "Could not calculate salary plan.");
   } finally {
     setStatus(els.salaryStatus, false);
-    els.runSalaryBtn.disabled = false;
   }
 }
 
@@ -2336,7 +2423,6 @@ async function loadSalaryFundSuggestions(input, plan) {
   const box = document.getElementById("salaryFundSuggestions");
   if (!box) return;
   setStatus(els.salaryStatus, true);
-  els.runSalaryBtn.disabled = true;
   try {
     const profile = salaryPlannerProfile(input);
     const funds = await recommendFundsForProfile(profile, plan.investable);
@@ -2464,7 +2550,6 @@ function renderCorpusResults(input, result) {
 async function runMetalTracker() {
   showError(els.metalError, "");
   setStatus(els.metalStatus, true);
-  els.runMetalsBtn.disabled = true;
   try {
     const candidates = await getMetalCandidates(els.metalType.value, els.metalView.value);
     if (!candidates.length) throw new Error("MFapi did not return metal fund search results.");
@@ -2486,7 +2571,6 @@ async function runMetalTracker() {
     showError(els.metalError, error.message || "Could not load metal funds.");
   } finally {
     setStatus(els.metalStatus, false);
-    els.runMetalsBtn.disabled = false;
   }
 }
 
