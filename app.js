@@ -366,16 +366,16 @@ function wireInputs() {
   });
   els.helpPrevBtn.addEventListener("click", () => moveHelpStep(-1));
   els.helpNextBtn.addEventListener("click", () => moveHelpStep(1));
-  els.runSipCalcBtn.addEventListener("click", runSipCalculator);
-  els.runSipBtn.addEventListener("click", runSipChallenge);
-  els.runCompareBtn.addEventListener("click", runCompare);
-  els.runLoanBtn.addEventListener("click", runLoanPlanner);
+  els.runSipCalcBtn.addEventListener("click", () => runWithButtonLoading(els.runSipCalcBtn, "Calculating SIP...", () => runSipCalculator()));
+  els.runSipBtn.addEventListener("click", () => runWithButtonLoading(els.runSipBtn, "Running SIP replay...", runSipChallenge));
+  els.runCompareBtn.addEventListener("click", () => runWithButtonLoading(els.runCompareBtn, "Comparing funds...", runCompare));
+  els.runLoanBtn.addEventListener("click", () => runWithButtonLoading(els.runLoanBtn, "Calculating plan...", runLoanPlanner));
   els.freedomGoalType.addEventListener("change", updateFreedomFields);
-  els.runFreedomBtn.addEventListener("click", runFreedomGoals);
-  els.runSalaryBtn.addEventListener("click", runSalaryPlanner);
-  els.runCorpusBtn.addEventListener("click", runCorpusCalculator);
-  els.runMetalsBtn.addEventListener("click", runMetalTracker);
-  els.runPopularBtn.addEventListener("click", () => loadMostInvestedStudyFunds());
+  els.runFreedomBtn.addEventListener("click", () => runWithButtonLoading(els.runFreedomBtn, "Calculating goal...", runFreedomGoals));
+  els.runSalaryBtn.addEventListener("click", () => runWithButtonLoading(els.runSalaryBtn, "Planning salary...", runSalaryPlanner));
+  els.runCorpusBtn.addEventListener("click", () => runWithButtonLoading(els.runCorpusBtn, "Calculating corpus...", runCorpusCalculator));
+  els.runMetalsBtn.addEventListener("click", () => runWithButtonLoading(els.runMetalsBtn, "Loading metal funds...", runMetalTracker));
+  els.runPopularBtn.addEventListener("click", () => runWithButtonLoading(els.runPopularBtn, "Loading popular funds...", loadMostInvestedStudyFunds));
   runSipCalculator(false);
 }
 
@@ -470,6 +470,30 @@ function setFindLoading(isLoading) {
     button.setAttribute("aria-busy", String(isLoading));
   });
   setStatus(els.findStatus, isLoading);
+}
+
+function setButtonLoading(button, isLoading, loadingText) {
+  if (!button) return;
+  if (!button.dataset.idleLabel) button.dataset.idleLabel = button.innerHTML;
+  button.disabled = Boolean(isLoading);
+  button.setAttribute("aria-busy", String(Boolean(isLoading)));
+  button.innerHTML = isLoading
+    ? `<span class="spinner" aria-hidden="true"></span><span>${escapeHTML(loadingText)}</span>`
+    : button.dataset.idleLabel;
+}
+
+function nextPaint() {
+  return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+}
+
+async function runWithButtonLoading(button, loadingText, action) {
+  setButtonLoading(button, true, loadingText);
+  await nextPaint();
+  try {
+    return await action();
+  } finally {
+    setButtonLoading(button, false, loadingText);
+  }
 }
 
 function scrollToResults(target) {
@@ -1708,7 +1732,6 @@ async function runSipChallenge() {
     return;
   }
   setStatus(els.sipStatus, true);
-  els.runSipBtn.disabled = true;
   try {
     const amount = readMoney(els.sipAmount.value) || 10000;
     const years = Number(els.sipYears.value);
@@ -1725,7 +1748,6 @@ async function runSipChallenge() {
     showError(els.sipError, error.message || "Could not complete SIP simulation.");
   } finally {
     setStatus(els.sipStatus, false);
-    els.runSipBtn.disabled = false;
   }
 }
 
@@ -1811,7 +1833,6 @@ async function runCompare() {
     return;
   }
   setStatus(els.compareStatus, true);
-  els.runCompareBtn.disabled = true;
   try {
     const results = [];
     for (const fund of state.compareSelected) {
@@ -1826,7 +1847,6 @@ async function runCompare() {
     showError(els.compareError, error.message || "Could not compare the selected funds.");
   } finally {
     setStatus(els.compareStatus, false);
-    els.runCompareBtn.disabled = false;
   }
 }
 
@@ -2224,7 +2244,6 @@ async function runSalaryPlanner() {
     showError(els.salaryError, error.message || "Could not calculate salary plan.");
   } finally {
     setStatus(els.salaryStatus, false);
-    els.runSalaryBtn.disabled = false;
   }
 }
 
@@ -2316,7 +2335,6 @@ async function loadSalaryFundSuggestions(input, plan) {
   const box = document.getElementById("salaryFundSuggestions");
   if (!box) return;
   setStatus(els.salaryStatus, true);
-  els.runSalaryBtn.disabled = true;
   try {
     const profile = salaryPlannerProfile(input);
     const funds = await recommendFundsForProfile(profile, plan.investable);
@@ -2444,7 +2462,6 @@ function renderCorpusResults(input, result) {
 async function runMetalTracker() {
   showError(els.metalError, "");
   setStatus(els.metalStatus, true);
-  els.runMetalsBtn.disabled = true;
   try {
     const candidates = await getMetalCandidates(els.metalType.value, els.metalView.value);
     if (!candidates.length) throw new Error("MFapi did not return metal fund search results.");
@@ -2466,7 +2483,6 @@ async function runMetalTracker() {
     showError(els.metalError, error.message || "Could not load metal funds.");
   } finally {
     setStatus(els.metalStatus, false);
-    els.runMetalsBtn.disabled = false;
   }
 }
 

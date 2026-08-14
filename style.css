@@ -1234,6 +1234,14 @@ input[type="range"] {
   gap: 18px;
   align-items: start;
 }
+
+/* Salary Planner: keep results full-width so desktop fund suggestions stay horizontal. */
+#salary .two-col {
+  grid-template-columns: 1fr;
+}
+#salaryFundSuggestions .results-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
 .chart-wrap {
   border: 1px solid var(--line);
   border-radius: var(--radius);
