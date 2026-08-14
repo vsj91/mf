@@ -648,7 +648,7 @@ function renderRecommendations(funds, profile, amount) {
     ${renderStudyMix(displayFunds, amount)}
     ${renderPeriodComparison(displayFunds)}
     <div class="results-grid">
-      ${displayFunds.map((fund, index) => renderFundCard(fund, profile, index === 0)).join("")}
+      ${displayFunds.map((fund, index) => renderFundCard(fund, profile, amount, index === 0)).join("")}
     </div>
     <div class="notice">Past performance does not guarantee future returns. The Fund Score is an analytical score, not investment advice.</div>
   `;
@@ -881,7 +881,7 @@ function isRecentNav(date) {
   return ageDays <= 180;
 }
 
-function renderFundCard(fund, profile, best) {
+function renderFundCard(fund, profile, amount, best) {
   return `
     <article class="fund-card ${best ? "best" : ""}">
       <div class="fund-top">
@@ -900,6 +900,7 @@ function renderFundCard(fund, profile, best) {
         <div class="metric"><small>5Y CAGR</small><strong>${formatPercent(fund.returns.y5)}</strong></div>
         <div class="metric"><small>Score</small><strong>${fund.score}/100</strong></div>
       </div>
+      ${renderPastSipCorpus(fund, amount, profile.duration.years)}
       ${renderFundNavChart(fund, "all")}
       <div class="why">${escapeHTML(whyMatches(fund, profile))}</div>
       <button class="btn btn-ghost" type="button" data-detail>View detailed analysis</button>
@@ -907,6 +908,33 @@ function renderFundCard(fund, profile, best) {
         Latest NAV: ${escapeHTML(formatNav(fund.latest.nav))} on ${escapeHTML(formatDate(fund.latest.date))}. 1Y return: ${escapeHTML(formatPercent(fund.returns.y1))}. 10Y CAGR: ${escapeHTML(formatPercent(fund.returns.y10))}. Volatility: ${escapeHTML(formatPercent(fund.volatility))}. Maximum drawdown: ${escapeHTML(formatPercent(fund.maxDrawdown))}. Positive monthly periods: ${escapeHTML(formatPercent(fund.consistency))}. Available NAV history: ${escapeHTML(fund.historyYears.toFixed(1))} years. The score uses historical return, consistency, volatility, drawdown, and history length. It is not investment advice.
       </div>
     </article>
+  `;
+}
+
+function renderPastSipCorpus(fund, amount, years) {
+  const simulation = simulateSip(fund, amount, years);
+  if (!simulation || simulation.instalments < Math.max(6, years * 8)) {
+    return `
+      <div class="why">
+        If you had started a ${escapeHTML(INR.format(amount))}/month SIP ${escapeHTML(String(years))} years ago, this fund does not have enough NAV history to reconstruct a clean result.
+      </div>
+    `;
+  }
+  return `
+    <div class="past-sip">
+      <div>
+        <small>If you had invested</small>
+        <strong>${escapeHTML(INR.format(amount))}/month for ${escapeHTML(String(years))} years</strong>
+      </div>
+      <div>
+        <small>Historical corpus today</small>
+        <strong>${escapeHTML(INR.format(simulation.currentValue))}</strong>
+      </div>
+      <div>
+        <small>Total invested</small>
+        <strong>${escapeHTML(INR.format(simulation.totalInvested))}</strong>
+      </div>
+    </div>
   `;
 }
 
