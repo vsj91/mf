@@ -942,17 +942,14 @@ function renderPastSipCorpus(fund, amount, years) {
   }
   return `
     <div class="past-sip">
-      <div>
-        <small>If you had invested</small>
-        <strong>${escapeHTML(INR.format(amount))}/month for ${escapeHTML(String(years))} years</strong>
+      <div class="past-sip-head">
+        <small>Past SIP replay</small>
+        <span>${escapeHTML(INR.format(amount))}/month • ${escapeHTML(String(years))} years</span>
       </div>
-      <div>
-        <small>Historical corpus today</small>
-        <strong>${escapeHTML(INR.format(simulation.currentValue))}</strong>
-      </div>
-      <div>
-        <small>Total invested</small>
-        <strong>${escapeHTML(INR.format(simulation.totalInvested))}</strong>
+      <strong>${escapeHTML(INR.format(simulation.currentValue))}</strong>
+      <div class="past-sip-foot">
+        <span>Corpus today</span>
+        <span>Invested ${escapeHTML(INR.format(simulation.totalInvested))}</span>
       </div>
     </div>
   `;
