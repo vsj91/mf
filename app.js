@@ -735,9 +735,14 @@ function strictRecommendationFilter(analysedFunds, profile) {
     if (profile.risk === "Low") {
       // prefer Low/Moderate buckets, exclude small-cap/sector/thematic
       if (/small cap|sector|thematic/.test(text)) return false;
-      if (textRisk === "Very High" || textRisk === "High") return false;
-      // prefer low volatility when stable preference
-      if (profile.returnPref === "stable" && fund.volatility != null && fund.volatility > 0.18) return false;
+      // Allow 'High' bucket candidates if their text/category indicates debt/liquid or they have low volatility
+      if (textRisk === "Very High") return false;
+      if (textRisk === "High") {
+        const isDebtLike = /debt|liquid|ultra short|short duration|corporate|gilt|g-sec|overnight|money market/.test(text);
+        if (!isDebtLike && (fund.volatility == null || fund.volatility > 0.22)) return false;
+      }
+      // prefer low volatility when stable preference — relaxed threshold
+      if (profile.returnPref === "stable" && fund.volatility != null && fund.volatility > 0.24) return false;
     }
     if (profile.risk === "Moderate") {
       // allow Moderate or Low; deprioritize Very High
