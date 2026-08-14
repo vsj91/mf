@@ -523,7 +523,8 @@ input[type="range"] {
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: rgba(0, 0, 0, .24);
+  background: rgba(10, 15, 18, .62);
+  backdrop-filter: blur(3px);
   padding: 88px 16px 16px;
 }
 .help-overlay.show {
@@ -535,7 +536,7 @@ input[type="range"] {
   border: 1px solid var(--line);
   border-radius: 22px;
   background: var(--paper);
-  box-shadow: var(--shadow);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, .34);
   padding: 16px;
   display: grid;
   gap: 14px;
@@ -611,9 +612,9 @@ input[type="range"] {
 .help-highlight {
   position: relative;
   z-index: 61;
-  outline: 4px solid rgba(246, 185, 68, .9);
+  outline: 4px solid rgba(246, 185, 68, 1);
   outline-offset: 5px;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, .18), 0 0 0 10px rgba(246, 185, 68, .16);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, .48), 0 0 0 10px rgba(246, 185, 68, .22);
   border-radius: 18px;
 }
 #loanFundSuggestions .results-grid,
