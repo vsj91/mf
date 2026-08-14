@@ -671,10 +671,27 @@ async function findFunds() {
     const filteredByProfile = strictRecommendationFilter(analysed, profile);
     const sourceList = filteredByProfile.length ? filteredByProfile : analysed;
 
-    const results = sourceList
-      .filter(fund => fund.latest && isRecentNav(fund.latest.date))
-      .sort((a, b) => b.finalRank - a.finalRank)
-      .slice(0, 3);
+    // Prefer active funds first (updated within ACTIVE_CUTOFF_DAYS)
+    const sorted = sourceList.sort((a, b) => b.finalRank - a.finalRank);
+
+    // Try to pick active funds
+    let results = sorted.filter(fund => fund.latest && isRecentNav(fund.latest.date)).slice(0, 3);
+
+    // Fallback: include older but analysable debt/liquid funds if no active funds found
+    if (!results.length) {
+      const fallback = sorted.filter(fund => {
+        if (!fund.latest || !fund.latest.date) return false;
+        const ageDays = (Date.now() - new Date(fund.latest.date).getTime()) / (24 * 60 * 60 * 1000);
+        if (ageDays > SEVERE_STALE_DAYS) return false; // reject severely stale NAVs
+        const text = ((fund.category || "") + " " + (fund.name || "")).toLowerCase();
+        const isDebtLike = /liquid|overnight|short|debt|corporate|money market|ultra short|short duration/.test(text);
+        const historyRows = Array.isArray(fund.history) ? fund.history.length : (Array.isArray(fund.navPath) ? fund.navPath.length : 0);
+        const minRows = isDebtLike ? MIN_DEBT_HISTORY_ROWS : MIN_HISTORY_ROWS;
+        return historyRows >= minRows || isDebtLike; // allow debt-like schemes even with shorter history
+      }).slice(0, 3);
+      if (fallback.length) results = fallback;
+    }
+
     if (!results.length) throw new Error("MFapi returned insufficient recent NAV history for the shortlisted funds. Try a different risk or duration.");
     const hydratedResults = await hydrateFundsWithHistory(results);
     renderRecommendations(hydratedResults, profile, amount);
