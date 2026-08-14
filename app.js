@@ -495,7 +495,9 @@ function highlightHelpTarget(selector) {
   const target = document.querySelector(selector);
   if (!target) return;
   target.classList.add("help-highlight");
-  setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "center" }), 60);
+  setTimeout(() => {
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, 60);
 }
 
 function clearHelpHighlight() {

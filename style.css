@@ -1929,3 +1929,104 @@ tr:last-child td { border-bottom: 0; }
     background: rgba(53, 212, 154, .10);
   }
 }
+
+
+/* ---------- How To Use walkthrough: viewport-safe layering ---------- */
+.help-overlay {
+  z-index: 1000;
+  background: transparent;
+  backdrop-filter: none;
+  pointer-events: auto;
+}
+
+.help-overlay.show {
+  display: block;
+}
+
+.help-panel {
+  position: relative;
+  z-index: 3;
+  max-height: calc(100dvh - 104px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.help-actions {
+  position: sticky;
+  bottom: -1px;
+  z-index: 4;
+  margin: 0 -2px -2px;
+  padding: 10px 2px 2px;
+  background: linear-gradient(180deg, transparent 0%, var(--paper) 28%);
+}
+
+.help-highlight {
+  position: relative;
+  z-index: 999;
+  outline: 4px solid rgba(246, 185, 68, 1);
+  outline-offset: 5px;
+  box-shadow:
+    0 0 0 9999px rgba(0, 0, 0, .58),
+    0 0 0 10px rgba(246, 185, 68, .22);
+  border-radius: 18px;
+}
+
+/* Keep the walkthrough card above the highlighted target while allowing
+   the target's spotlight shadow to dim the rest of the page. */
+.help-overlay .help-panel {
+  isolation: isolate;
+}
+
+@media (max-width: 680px) {
+  .help-overlay {
+    padding: 10px;
+    display: none;
+    align-items: flex-end;
+  }
+
+  .help-overlay.show {
+    display: flex;
+  }
+
+  .help-panel {
+    width: 100%;
+    max-height: min(54dvh, 470px);
+    margin: auto 0 0;
+    border-radius: 20px 20px 14px 14px;
+    padding: 14px;
+  }
+
+  .help-top h2 {
+    font-size: 19px;
+  }
+
+  .help-step-card {
+    padding: 12px;
+  }
+
+  .help-step-card h3 {
+    font-size: 17px;
+  }
+
+  .help-step-card p {
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .help-actions {
+    gap: 8px;
+    padding-top: 10px;
+  }
+
+  .help-actions .btn {
+    flex: 1;
+    min-height: 46px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .help-actions {
+    background: linear-gradient(180deg, transparent 0%, var(--paper) 28%);
+  }
+}
