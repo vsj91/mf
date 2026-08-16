@@ -51,7 +51,7 @@
   };
 
   const CACHE_PREFIX =
-    "plansip_ai_perspective_v10:";
+    "plansip_ai_perspective_v11:";
 
   function init() {
     injectStyles();
@@ -80,7 +80,10 @@
         meta.resultId
       );
 
-    if (!section || !result) {
+    if (
+      !section ||
+      !result
+    ) {
       return;
     }
 
@@ -90,13 +93,16 @@
           result
         );
 
-      if (text.length < 20) {
+      if (
+        text.length < 20
+      ) {
         result
           .querySelectorAll(
             ".plansip-ai-inline"
           )
           .forEach(
-            el => el.remove()
+            el =>
+              el.remove()
           );
 
         return;
@@ -233,7 +239,9 @@
         ".study-mix"
       );
 
-    if (analysisCard) {
+    if (
+      analysisCard
+    ) {
       analysisCard
         .insertAdjacentElement(
           "beforebegin",
@@ -248,7 +256,9 @@
         "h2, h3"
       );
 
-    if (firstHeading) {
+    if (
+      firstHeading
+    ) {
       firstHeading
         .insertAdjacentElement(
           "afterend",
@@ -326,7 +336,9 @@
         cacheKey
       );
 
-    if (cached) {
+    if (
+      cached
+    ) {
       renderPerspective(
         output,
         cached
@@ -335,7 +347,9 @@
       return;
     }
 
-    if (!CONFIG.endpoint) {
+    if (
+      !CONFIG.endpoint
+    ) {
       renderMessage(
         output,
         "AI Perspective is temporarily unavailable."
@@ -380,7 +394,9 @@
           await response.json();
       } catch (_) {}
 
-      if (!response.ok) {
+      if (
+        !response.ok
+      ) {
         const error =
           new Error(
             data.error ||
@@ -399,7 +415,9 @@
           data?.perspective
         );
 
-      if (!perspective) {
+      if (
+        !perspective
+      ) {
         const error =
           new Error(
             "AI returned invalid response."
@@ -441,7 +459,9 @@
     section,
     result
   ) {
-    switch (toolId) {
+    switch (
+      toolId
+    ) {
       case "find":
       case "compare":
       case "popular":
@@ -543,7 +563,10 @@
       );
 
     return cards
-      .slice(0, 6)
+      .slice(
+        0,
+        6
+      )
       .map(
         card => {
           const name =
@@ -575,9 +598,7 @@
 
             category:
               inferCategory(
-                meta +
-                " " +
-                name
+                `${meta} ${name}`
               ),
 
             y1:
@@ -657,38 +678,47 @@
         "investedAmount",
         /Invested(?: amount)?\s*₹?\s*([\d,]+)/i
       ],
+
       [
         "estimatedCorpus",
         /(?:Estimated )?Corpus(?: today)?\s*₹?\s*([\d,]+)/i
       ],
+
       [
         "estimatedGain",
         /(?:Estimated )?Gain\s*₹?\s*([\d,]+)/i
       ],
+
       [
         "monthlySip",
         /(?:Monthly )?SIP\s*₹?\s*([\d,]+)/i
       ],
+
       [
         "currentValue",
         /Current value\s*₹?\s*([\d,]+)/i
       ],
+
       [
         "target",
         /Target\s*₹?\s*([\d,]+)/i
       ],
+
       [
         "emi",
         /\bEMI\s*₹?\s*([\d,]+)/i
       ],
+
       [
         "loanOutstanding",
         /Outstanding(?: loan)?\s*₹?\s*([\d,]+)/i
       ],
+
       [
         "years",
         /(\d+(?:\.\d+)?)\s*years?/i
       ],
+
       [
         "rate",
         /(\d+(?:\.\d+)?)%\s*(?:return|rate|interest)/i
@@ -706,7 +736,9 @@
           regex
         );
 
-      if (match) {
+      if (
+        match
+      ) {
         data[key] =
           parseNumber(
             match[1]
@@ -733,112 +765,144 @@
 
     if (
       /balanced advantage|dynamic asset allocation/
-        .test(value)
+        .test(
+          value
+        )
     ) {
       return "Balanced Advantage";
     }
 
     if (
       /nifty|sensex|index/
-        .test(value)
+        .test(
+          value
+        )
     ) {
       return "Index";
     }
 
     if (
       /small cap/
-        .test(value)
+        .test(
+          value
+        )
     ) {
       return "Small Cap";
     }
 
     if (
       /large\s*(?:&|and)\s*mid/
-        .test(value)
+        .test(
+          value
+        )
     ) {
       return "Large & Mid Cap";
     }
 
     if (
       /mid cap/
-        .test(value)
+        .test(
+          value
+        )
     ) {
       return "Mid Cap";
     }
 
     if (
       /large cap/
-        .test(value)
+        .test(
+          value
+        )
     ) {
       return "Large Cap";
     }
 
     if (
       /flexi cap/
-        .test(value)
+        .test(
+          value
+        )
     ) {
       return "Flexi Cap";
     }
 
     if (
       /multi cap/
-        .test(value)
+        .test(
+          value
+        )
     ) {
       return "Multi Cap";
     }
 
     if (
       /hybrid/
-        .test(value)
+        .test(
+          value
+        )
     ) {
       return "Hybrid";
     }
 
     if (
       /liquid/
-        .test(value)
+        .test(
+          value
+        )
     ) {
       return "Liquid";
     }
 
     if (
       /money market/
-        .test(value)
+        .test(
+          value
+        )
     ) {
       return "Money Market";
     }
 
     if (
       /short duration|short term/
-        .test(value)
+        .test(
+          value
+        )
     ) {
       return "Short Duration";
     }
 
     if (
       /corporate bond/
-        .test(value)
+        .test(
+          value
+        )
     ) {
       return "Corporate Bond";
     }
 
     if (
       /gilt|g-sec/
-        .test(value)
+        .test(
+          value
+        )
     ) {
       return "Gilt";
     }
 
     if (
       /gold/
-        .test(value)
+        .test(
+          value
+        )
     ) {
       return "Gold";
     }
 
     if (
       /silver/
-        .test(value)
+        .test(
+          value
+        )
     ) {
       return "Silver";
     }
@@ -857,7 +921,9 @@
         regex
       );
 
-    if (!match) {
+    if (
+      !match
+    ) {
       return null;
     }
 
@@ -884,7 +950,9 @@
         regex
       );
 
-    if (!match) {
+    if (
+      !match
+    ) {
       return null;
     }
 
@@ -1275,6 +1343,14 @@
         "Too many AI requests right now. Please try again shortly.";
     }
 
+    if (
+      error?.reason ===
+      "quota"
+    ) {
+      message =
+        "AI usage is unavailable right now. Your PlanSIP result remains available.";
+    }
+
     renderMessage(
       output,
       message
@@ -1294,7 +1370,8 @@
         ".plansip-ai-inline"
       )
       .forEach(
-        el => el.remove()
+        el =>
+          el.remove()
       );
 
     return cleanText(
@@ -1551,7 +1628,7 @@
   function injectStyles() {
     if (
       document.getElementById(
-        "plansip-ai-v10-styles"
+        "plansip-ai-v11-styles"
       )
     ) {
       return;
@@ -1563,217 +1640,576 @@
       );
 
     style.id =
-      "plansip-ai-v10-styles";
+      "plansip-ai-v11-styles";
 
     style.textContent = `
 
+      /*
+       * LIGHT MODE DEFAULT
+       */
       .plansip-ai-inline {
-        margin: 14px 0;
-        padding: 18px;
-        border: 1px solid var(--line);
-        border-radius: 24px;
-        background: var(--surface-elevated);
-        color: var(--ink);
-        box-shadow: 0 16px 42px rgba(29,29,31,.06);
+
+        --ai-bg:
+          #ffffff;
+
+        --ai-card:
+          #f7f7f8;
+
+        --ai-text:
+          #1d1d1f;
+
+        --ai-muted:
+          #6e6e73;
+
+        --ai-border:
+          rgba(
+            0,
+            0,
+            0,
+            .12
+          );
+
+        --ai-shadow:
+          rgba(
+            0,
+            0,
+            0,
+            .08
+          );
+
+        --ai-good-bg:
+          rgba(
+            31,
+            143,
+            95,
+            .08
+          );
+
+        --ai-watch-bg:
+          rgba(
+            198,
+            122,
+            0,
+            .08
+          );
+
+        margin:
+          14px 0;
+
+        padding:
+          18px;
+
+        border:
+          1px solid
+          var(--ai-border);
+
+        border-radius:
+          24px;
+
+        background:
+          var(--ai-bg);
+
+        color:
+          var(--ai-text);
+
+        box-shadow:
+          0 16px 42px
+          var(--ai-shadow);
       }
 
-      .plansip-ai-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-      }
 
-      .plansip-ai-title {
-        margin: 0;
-        color: var(--ink);
-        font-size: 20px;
-        font-weight: 850;
-      }
-
-      .plansip-ai-title span {
-        color: var(--brand);
-      }
-
-      .plansip-ai-sub {
-        margin-top: 5px;
-        color: var(--muted);
-        font-size: 13px;
-      }
-
-      .plansip-ai-output {
-        display: none;
-        margin-top: 16px;
-      }
-
-      .plansip-ai-output:not(:empty) {
-        display: block;
-      }
-
-      .plansip-ai-result {
-        display: grid;
-        gap: 12px;
-      }
-
-      .plansip-ai-result-headline {
-        color: var(--ink);
-        font-size: 17px;
-        font-weight: 850;
-      }
-
-      .plansip-ai-result-summary {
-        color: var(--muted);
-        font-size: 14px;
-        line-height: 1.5;
-      }
-
-      .plansip-ai-preference,
-      .plansip-ai-item {
-        padding: 14px 15px;
-        border: 1px solid var(--line);
-        border-radius: 18px;
-        background: var(--paper);
-        color: var(--ink);
-      }
-
-      .plansip-ai-preference-label {
-        color: var(--brand);
-        font-size: 12px;
-        font-weight: 900;
-      }
-
-      .plansip-ai-preference-fund {
-        margin-top: 5px;
-        color: var(--ink);
-        font-size: 17px;
-        font-weight: 900;
-      }
-
-      .plansip-ai-preference-reason {
-        margin-top: 5px;
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.45;
-      }
-
-      .plansip-ai-preference-note {
-        margin-top: 7px;
-        color: var(--muted);
-        font-size: 10px;
-      }
-
-      .plansip-ai-items {
-        display: grid;
-        gap: 9px;
-      }
-
-      .plansip-ai-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 14px;
-      }
-
-      .plansip-ai-item-name {
-        color: var(--ink);
-        font-size: 14px;
-        font-weight: 800;
-      }
-
-      .plansip-ai-item-metric {
-        margin-top: 3px;
-        color: var(--muted);
-        font-size: 12px;
-      }
-
-      .plansip-ai-item-note {
-        max-width: 165px;
-        color: var(--brand);
-        font-size: 12px;
-        font-weight: 850;
-        text-align: right;
-      }
-
-      .plansip-ai-insights {
-        display: grid;
-        gap: 8px;
-      }
-
-      .plansip-ai-insight {
-        display: flex;
-        gap: 8px;
-        padding: 10px 12px;
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        background: var(--paper);
-        font-size: 13px;
-        line-height: 1.4;
-      }
-
-      .plansip-ai-good {
-        color: var(--good);
-      }
-
-      .plansip-ai-watch {
-        color: var(--warn);
-      }
-
-      .plansip-ai-disclaimer {
-        color: var(--muted);
-        font-size: 11px;
-      }
-
-      .plansip-ai-loading {
-        display: flex;
-        align-items: center;
-        gap: 9px;
-        color: var(--muted);
-        font-size: 13px;
-      }
-
-      .plansip-ai-spinner {
-        width: 17px;
-        height: 17px;
-        border: 2px solid var(--line);
-        border-top-color: var(--brand);
-        border-radius: 50%;
-        animation: plansipAISpin .8s linear infinite;
-      }
-
-      @keyframes plansipAISpin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-
-      @media (max-width: 640px) {
+      /*
+       * DEVICE DARK MODE
+       */
+      @media
+      (prefers-color-scheme: dark) {
 
         .plansip-ai-inline {
-          padding: 14px;
-          border-radius: 22px;
+
+          --ai-bg:
+            #1c1c1e;
+
+          --ai-card:
+            #2c2c2e;
+
+          --ai-text:
+            #f5f5f7;
+
+          --ai-muted:
+            #aeaeb2;
+
+          --ai-border:
+            rgba(
+              255,
+              255,
+              255,
+              .14
+            );
+
+          --ai-shadow:
+            rgba(
+              0,
+              0,
+              0,
+              .45
+            );
+
+          --ai-good-bg:
+            rgba(
+              48,
+              209,
+              88,
+              .10
+            );
+
+          --ai-watch-bg:
+            rgba(
+              255,
+              159,
+              10,
+              .10
+            );
+        }
+
+      }
+
+
+      .plansip-ai-head {
+        display:
+          flex;
+
+        align-items:
+          center;
+
+        justify-content:
+          space-between;
+
+        gap:
+          16px;
+      }
+
+
+      .plansip-ai-title {
+        margin:
+          0;
+
+        color:
+          var(--ai-text);
+
+        font-size:
+          20px;
+
+        font-weight:
+          850;
+      }
+
+
+      .plansip-ai-title span {
+        color:
+          var(
+            --brand,
+            #007a5a
+          );
+      }
+
+
+      .plansip-ai-sub {
+        margin-top:
+          5px;
+
+        color:
+          var(--ai-muted);
+
+        font-size:
+          13px;
+      }
+
+
+      .plansip-ai-output {
+        display:
+          none;
+
+        margin-top:
+          16px;
+      }
+
+
+      .plansip-ai-output:not(:empty) {
+        display:
+          block;
+      }
+
+
+      .plansip-ai-result {
+        display:
+          grid;
+
+        gap:
+          12px;
+      }
+
+
+      .plansip-ai-result-headline {
+        color:
+          var(--ai-text);
+
+        font-size:
+          17px;
+
+        font-weight:
+          850;
+      }
+
+
+      .plansip-ai-result-summary {
+        color:
+          var(--ai-muted);
+
+        font-size:
+          14px;
+
+        line-height:
+          1.5;
+      }
+
+
+      .plansip-ai-preference {
+        padding:
+          14px 15px;
+
+        border:
+          1px solid
+          var(--ai-border);
+
+        border-radius:
+          18px;
+
+        background:
+          var(--ai-card);
+
+        color:
+          var(--ai-text);
+      }
+
+
+      .plansip-ai-preference-label {
+        color:
+          var(
+            --brand,
+            #007a5a
+          );
+
+        font-size:
+          12px;
+
+        font-weight:
+          900;
+      }
+
+
+      .plansip-ai-preference-fund {
+        margin-top:
+          5px;
+
+        color:
+          var(--ai-text);
+
+        font-size:
+          17px;
+
+        font-weight:
+          900;
+      }
+
+
+      .plansip-ai-preference-reason {
+        margin-top:
+          5px;
+
+        color:
+          var(--ai-muted);
+
+        font-size:
+          13px;
+
+        line-height:
+          1.45;
+      }
+
+
+      .plansip-ai-preference-note {
+        margin-top:
+          7px;
+
+        color:
+          var(--ai-muted);
+
+        font-size:
+          10px;
+      }
+
+
+      .plansip-ai-items {
+        display:
+          grid;
+
+        gap:
+          9px;
+      }
+
+
+      .plansip-ai-item {
+        display:
+          flex;
+
+        align-items:
+          center;
+
+        justify-content:
+          space-between;
+
+        gap:
+          14px;
+
+        padding:
+          12px 14px;
+
+        border:
+          1px solid
+          var(--ai-border);
+
+        border-radius:
+          18px;
+
+        background:
+          var(--ai-card);
+
+        color:
+          var(--ai-text);
+      }
+
+
+      .plansip-ai-item-name {
+        color:
+          var(--ai-text);
+
+        font-size:
+          14px;
+
+        font-weight:
+          800;
+      }
+
+
+      .plansip-ai-item-metric {
+        margin-top:
+          3px;
+
+        color:
+          var(--ai-muted);
+
+        font-size:
+          12px;
+      }
+
+
+      .plansip-ai-item-note {
+        max-width:
+          165px;
+
+        color:
+          var(
+            --brand,
+            #007a5a
+          );
+
+        font-size:
+          12px;
+
+        font-weight:
+          850;
+
+        text-align:
+          right;
+      }
+
+
+      .plansip-ai-insights {
+        display:
+          grid;
+
+        gap:
+          8px;
+      }
+
+
+      .plansip-ai-insight {
+        display:
+          flex;
+
+        gap:
+          8px;
+
+        padding:
+          10px 12px;
+
+        border:
+          1px solid
+          var(--ai-border);
+
+        border-radius:
+          14px;
+
+        color:
+          var(--ai-text);
+      }
+
+
+      .plansip-ai-good {
+        background:
+          var(--ai-good-bg);
+
+        color:
+          var(
+            --good,
+            #1f8f5f
+          );
+      }
+
+
+      .plansip-ai-watch {
+        background:
+          var(--ai-watch-bg);
+
+        color:
+          var(
+            --warn,
+            #c67a00
+          );
+      }
+
+
+      .plansip-ai-disclaimer {
+        color:
+          var(--ai-muted);
+
+        font-size:
+          11px;
+      }
+
+
+      .plansip-ai-loading {
+        display:
+          flex;
+
+        align-items:
+          center;
+
+        gap:
+          9px;
+
+        color:
+          var(--ai-muted);
+
+        font-size:
+          13px;
+      }
+
+
+      .plansip-ai-message {
+        color:
+          var(--ai-muted);
+
+        font-size:
+          13px;
+      }
+
+
+      .plansip-ai-spinner {
+        width:
+          17px;
+
+        height:
+          17px;
+
+        border:
+          2px solid
+          var(--ai-border);
+
+        border-top-color:
+          var(
+            --brand,
+            #007a5a
+          );
+
+        border-radius:
+          50%;
+
+        animation:
+          plansipAISpin
+          .8s linear infinite;
+      }
+
+
+      @keyframes
+      plansipAISpin {
+
+        to {
+          transform:
+            rotate(
+              360deg
+            );
+        }
+
+      }
+
+
+      @media
+      (max-width: 640px) {
+
+        .plansip-ai-inline {
+          padding:
+            14px;
+
+          border-radius:
+            22px;
         }
 
         .plansip-ai-head {
-          flex-direction: column;
-          align-items: stretch;
+          flex-direction:
+            column;
+
+          align-items:
+            stretch;
         }
 
         .plansip-ai-btn {
-          width: 100%;
+          width:
+            100%;
         }
+
       }
 
-      @media (max-width: 420px) {
+
+      @media
+      (max-width: 420px) {
 
         .plansip-ai-item {
-          display: grid;
-          gap: 5px;
+          display:
+            grid;
+
+          gap:
+            5px;
         }
 
         .plansip-ai-item-note {
-          max-width: none;
-          text-align: left;
+          max-width:
+            none;
+
+          text-align:
+            left;
         }
+
       }
 
     `;
