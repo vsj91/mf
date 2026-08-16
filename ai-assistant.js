@@ -4,7 +4,7 @@
   const CONFIG = {
     endpoint: window.PLANSIP_AI_ENDPOINT || "",
     cacheHours: 24,
-    maxContextChars: 12000
+    maxContextChars: 10000
   };
 
   const TOOLS = {
@@ -20,311 +20,244 @@
     popular: { label: "Popular Funds", resultId: "popularResults" }
   };
 
-  const CACHE_PREFIX = "plansip_ai_v2:";
+  const CACHE_PREFIX = "plansip_ai_perspective_v3:";
 
-  function initAI() {
+  function init() {
     injectStyles();
-    injectGlobalAIIdentity();
-    Object.entries(TOOLS).forEach(([toolId, meta]) => setupTool(toolId, meta));
+    Object.entries(TOOLS).forEach(([toolId, meta]) => observeTool(toolId, meta));
   }
 
-  function injectGlobalAIIdentity() {
-    const hero = document.querySelector(".hero");
-    if (!hero || document.querySelector(".plansip-ai-global-chip")) return;
-
-    const chip = document.createElement("div");
-    chip.className = "plansip-ai-global-chip";
-    chip.innerHTML = `
-      <span class="plansip-ai-spark">✦</span>
-      <span><strong>AI-assisted analysis</strong> with PlanSIP formula fallback</span>
-    `;
-    hero.insertAdjacentElement("afterend", chip);
-  }
-
-  function setupTool(toolId, meta) {
+  function observeTool(toolId, meta) {
     const section = document.getElementById(toolId);
     const result = document.getElementById(meta.resultId);
+    if (!section || !result) return;
 
-    if (!section || !result || document.querySelector(`[data-ai-tool="${toolId}"]`)) {
-      return;
-    }
+    const ensure = () => {
+      const text = cleanText(result.innerText);
 
+      if (text.length < 20) {
+        result.querySelectorAll(":scope > .plansip-ai-inline").forEach(el => el.remove());
+        return;
+      }
+
+      if (!result.querySelector(`:scope > [data-ai-tool="${toolId}"]`)) {
+        addControl(toolId, meta, section, result);
+      }
+    };
+
+    ensure();
+
+    new MutationObserver(() => requestAnimationFrame(ensure)).observe(result, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+  }
+
+  function addControl(toolId, meta, section, result) {
     const host = document.createElement("div");
-    host.className = "plansip-ai-host";
+    host.className = "plansip-ai-inline";
     host.dataset.aiTool = toolId;
 
     host.innerHTML = `
-      <div class="plansip-ai-card">
-        <div class="plansip-ai-glow"></div>
-
-        <div class="plansip-ai-head">
-          <div>
-            <div class="plansip-ai-kicker">
-              <span>✦</span> AI-ASSISTED
-            </div>
-
-            <div class="plansip-ai-title">
-              AI Suggest for ${escapeHTML(meta.label)}
-            </div>
-
-            <div class="plansip-ai-sub">
-              PlanSIP calculates first. AI then explains the calculated result.
-            </div>
+      <div class="plansip-ai-inline-head">
+        <div>
+          <div class="plansip-ai-inline-title"><span>✦</span> AI Perspective</div>
+          <div class="plansip-ai-inline-sub">
+            Uses your inputs + the raw result metrics. PlanSIP score is not used as the AI decision.
           </div>
-
-          <button class="btn btn-primary plansip-ai-btn" type="button">
-            <span>✦</span> Ask AI
-          </button>
         </div>
 
-        <div class="plansip-ai-status">
-          <span class="plansip-ai-dot"></span>
-          <span>
-            If AI quota is reached, PlanSIP automatically uses the formula result.
-          </span>
-        </div>
-
-        <div class="plansip-ai-output" aria-live="polite"></div>
+        <button class="btn btn-primary plansip-ai-btn" type="button">
+          <span>✦</span> Ask AI
+        </button>
       </div>
+
+      <div class="plansip-ai-output" aria-live="polite"></div>
     `;
 
-    result.insertAdjacentElement("afterend", host);
+    result.insertAdjacentElement("afterbegin", host);
 
     const button = host.querySelector(".plansip-ai-btn");
     const output = host.querySelector(".plansip-ai-output");
 
-    button.addEventListener("click", () => {
-      runAI(toolId, meta, section, result, button, output);
-    });
+    button.addEventListener("click", () =>
+      runAI(toolId, meta, section, result, host, button, output)
+    );
   }
 
-  async function runAI(toolId, meta, section, result, button, output) {
-    const resultText = cleanText(result.innerText);
+  async function runAI(toolId, meta, section, result, host, button, output) {
+    const rawResult = extractResultText(result);
 
-    if (!resultText || resultText.length < 20) {
-      setResultMode(result, "formula");
-
-      show(
-        output,
-        "formula",
-        "Run the PlanSIP calculation first. AI Suggest uses the calculated result."
-      );
-
+    if (!rawResult || rawResult.length < 20) {
+      show(output, "formula", "Run the PlanSIP calculation first, then ask for an AI Perspective.");
       return;
     }
+
+    const profile = collectInputs(section);
+    const rawMetrics = stripPlanSipRankingSignals(rawResult).slice(0, CONFIG.maxContextChars);
 
     const payload = {
       tool: toolId,
       toolLabel: meta.label,
-      inputs: collectInputs(section),
-      results: resultText.slice(0, CONFIG.maxContextChars)
+      profile,
+      rawMetrics
     };
 
     const cacheKey = await makeCacheKey(payload);
     const cached = readCache(cacheKey);
 
     if (cached) {
-      setResultMode(result, "ai");
-      show(output, "ai", cached + "\n\n✦ AI-assisted result");
+      show(output, "ai", cached);
       return;
     }
 
     if (!CONFIG.endpoint) {
-      setResultMode(result, "formula");
-      showFormulaFallback(
+      show(
         output,
-        resultText,
-        "Cloudflare Workers AI endpoint is not configured."
+        "formula",
+        "AI Perspective is not configured. Your normal PlanSIP result remains available."
       );
       return;
     }
 
     button.disabled = true;
-    button.innerHTML = "<span>✦</span> AI analysing…";
-
-    setResultMode(result, "pending");
+    button.innerHTML = "<span>✦</span> Analysing…";
 
     show(
       output,
       "loading",
-      "AI is analysing your PlanSIP formula result…"
+      "AI is considering your preferences and the supplied result metrics…"
     );
 
     try {
       const response = await fetch(CONFIG.endpoint, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
 
-      if ([402, 429, 503].includes(response.status)) {
-        throw new Error("AI_LIMIT");
-      }
+      let data = {};
+
+      try {
+        data = await response.json();
+      } catch (_) {}
 
       if (!response.ok) {
-        throw new Error(`AI_HTTP_${response.status}`);
+        const err = new Error(data.error || `AI_HTTP_${response.status}`);
+        err.reason =
+          data.reason ||
+          (response.status === 429 ? "rate_limit" : "unknown");
+        throw err;
       }
 
-      const data = await response.json();
-
-      const analysis = cleanText(
-        data.analysis || data.output || ""
-      );
+      const analysis = cleanText(data.analysis || data.output || "");
 
       if (!analysis) {
-        throw new Error("AI_EMPTY");
+        const err = new Error("AI returned no readable answer.");
+        err.reason = "empty_response";
+        throw err;
       }
 
       writeCache(cacheKey, analysis);
-
-      setResultMode(result, "ai");
-
       show(output, "ai", analysis);
 
     } catch (error) {
-
-      setResultMode(result, "formula");
-
-      const reason =
-        error?.message === "AI_LIMIT"
-          ? "Cloudflare Workers AI free quota / rate limit is reached."
-          : "Cloudflare Workers AI is temporarily unavailable.";
-
-      showFormulaFallback(output, resultText, reason);
+      show(output, "formula", fallbackMessage(error));
 
     } finally {
-
       button.disabled = false;
-
-      button.innerHTML =
-        "<span>✦</span> Ask AI";
+      button.innerHTML = "<span>✦</span> Ask AI";
     }
+  }
+
+  function extractResultText(result) {
+    const clone = result.cloneNode(true);
+
+    clone
+      .querySelectorAll(".plansip-ai-inline, .plansip-result-mode-badge")
+      .forEach(el => el.remove());
+
+    return cleanText(clone.innerText);
+  }
+
+  function stripPlanSipRankingSignals(text) {
+    return cleanText(text)
+      .replace(/\b(?:Fund\s*)?Score\s*[:\-]?\s*\d+(?:\.\d+)?\s*\/\s*100\b/gi, "")
+      .replace(/\bScore\s*[:\-]?\s*\d+(?:\.\d+)?\b/gi, "")
+      .replace(/\bhighest overall score\b/gi, "")
+      .replace(/\bclosest study match\b/gi, "")
+      .replace(/\n{3,}/g, "\n\n");
   }
 
   function collectInputs(section) {
     const data = {};
 
+    section.querySelectorAll("input, select").forEach(el => {
+      if (!el.id || ["hidden", "button", "submit"].includes(el.type)) return;
+
+      if (
+        (el.type === "checkbox" || el.type === "radio") &&
+        !el.checked
+      ) {
+        return;
+      }
+
+      const label =
+        section.querySelector(`label[for="${cssEscape(el.id)}"]`)
+          ?.innerText?.trim() || el.id;
+
+      let value =
+        el.type === "checkbox"
+          ? Boolean(el.checked)
+          : String(el.value ?? "").slice(0, 200);
+
+      if (el.tagName === "SELECT" && el.selectedIndex >= 0) {
+        const selectedText =
+          el.options[el.selectedIndex]?.textContent?.trim();
+
+        if (selectedText) value = selectedText;
+      }
+
+      data[label] = value;
+    });
+
     section
-      .querySelectorAll("input, select")
-      .forEach((el) => {
+      .querySelectorAll(
+        ".segmented .active, .segmented [aria-pressed='true'], .segmented .selected"
+      )
+      .forEach((el, index) => {
+        const value = cleanText(el.innerText || el.textContent);
 
-        if (
-          !el.id ||
-          ["hidden", "button", "submit"].includes(el.type)
-        ) {
-          return;
+        if (value) {
+          data[`Selected option ${index + 1}`] = value;
         }
-
-        if (
-          (el.type === "checkbox" ||
-            el.type === "radio") &&
-          !el.checked
-        ) {
-          return;
-        }
-
-        const label =
-          section.querySelector(
-            `label[for="${cssEscape(el.id)}"]`
-          )?.innerText?.trim() || el.id;
-
-        data[label] =
-          el.type === "checkbox"
-            ? Boolean(el.checked)
-            : String(el.value ?? "").slice(0, 200);
       });
 
     return data;
   }
 
-  function setResultMode(result, mode) {
-    result.classList.remove(
-      "plansip-result-ai-assisted",
-      "plansip-result-ai-pending",
-      "plansip-result-formula"
-    );
+  function fallbackMessage(error) {
+    switch (error?.reason) {
+      case "quota":
+        return "Today's free AI allocation is finished. Your normal PlanSIP result remains available.";
 
-    const oldBadge =
-      result.querySelector(
-        ":scope > .plansip-result-mode-badge"
-      );
+      case "capacity":
+        return "AI is temporarily busy. Your PlanSIP result is unaffected; try Ask AI again shortly.";
 
-    if (oldBadge) {
-      oldBadge.remove();
+      case "rate_limit":
+        return "AI is receiving too many requests right now. Your PlanSIP result is unaffected; try again shortly.";
+
+      case "empty_response":
+        return "AI did not return a readable perspective this time. Your normal PlanSIP result remains available.";
+
+      default:
+        return `${error?.message || "AI is temporarily unavailable."} Your normal PlanSIP result remains available.`;
     }
-
-    const badge =
-      document.createElement("div");
-
-    badge.className =
-      "plansip-result-mode-badge";
-
-    if (mode === "ai") {
-
-      result.classList.add(
-        "plansip-result-ai-assisted"
-      );
-
-      badge.innerHTML =
-        "<span>✦</span> AI-assisted result";
-
-    } else if (mode === "pending") {
-
-      result.classList.add(
-        "plansip-result-ai-pending"
-      );
-
-      badge.innerHTML =
-        "<span>✦</span> AI analysing formula result";
-
-    } else {
-
-      result.classList.add(
-        "plansip-result-formula"
-      );
-
-      badge.innerHTML =
-        "<span>ƒx</span> PlanSIP formula result";
-    }
-
-    if (result.children.length) {
-      result.insertAdjacentElement(
-        "afterbegin",
-        badge
-      );
-    }
-  }
-
-  function showFormulaFallback(
-    output,
-    resultText,
-    reason
-  ) {
-
-    const summary =
-      resultText.length > 1800
-        ? resultText.slice(0, 1800) + "…"
-        : resultText;
-
-    show(
-      output,
-      "formula",
-      `${reason}
-
-PlanSIP Formula Fallback
-
-${summary}
-
-AI will be tried again the next time you press Ask AI.`
-    );
   }
 
   function show(output, mode, text) {
-    output.className =
-      `plansip-ai-output is-${mode}`;
-
+    output.className = `plansip-ai-output is-${mode}`;
     output.textContent = text;
   }
 
@@ -336,42 +269,27 @@ AI will be tried again the next time you press Ask AI.`
       .trim();
   }
 
-  function escapeHTML(value) {
-    return String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;");
-  }
-
   function readCache(key) {
     try {
-
       const item =
-        JSON.parse(
-          localStorage.getItem(
-            CACHE_PREFIX + key
-          ) || "null"
-        );
+        JSON.parse(localStorage.getItem(CACHE_PREFIX + key) || "null");
 
       if (
         !item ||
-        Date.now() - item.time >
-          CONFIG.cacheHours * 3600000
+        Date.now() - item.time > CONFIG.cacheHours * 3600000
       ) {
         return "";
       }
 
       return item.value || "";
 
-    } catch {
+    } catch (_) {
       return "";
     }
   }
 
   function writeCache(key, value) {
     try {
-
       localStorage.setItem(
         CACHE_PREFIX + key,
         JSON.stringify({
@@ -379,17 +297,13 @@ AI will be tried again the next time you press Ask AI.`
           value
         })
       );
-
-    } catch {}
+    } catch (_) {}
   }
 
   async function makeCacheKey(payload) {
-
-    const text =
-      JSON.stringify(payload);
+    const text = JSON.stringify(payload);
 
     if (window.crypto?.subtle) {
-
       const hash =
         await crypto.subtle.digest(
           "SHA-256",
@@ -398,23 +312,13 @@ AI will be tried again the next time you press Ask AI.`
 
       return Array
         .from(new Uint8Array(hash))
-        .map(
-          b =>
-            b
-              .toString(16)
-              .padStart(2, "0")
-        )
+        .map(b => b.toString(16).padStart(2, "0"))
         .join("");
     }
 
     let h = 2166136261;
 
-    for (
-      let i = 0;
-      i < text.length;
-      i++
-    ) {
-
+    for (let i = 0; i < text.length; i++) {
       h =
         Math.imul(
           h ^ text.charCodeAt(i),
@@ -426,156 +330,75 @@ AI will be tried again the next time you press Ask AI.`
   }
 
   function cssEscape(value) {
-
     return window.CSS?.escape
       ? CSS.escape(value)
       : String(value)
-          .replace(
-            /[^a-zA-Z0-9_-]/g,
-            "\\$&"
-          );
+          .replace(/[^a-zA-Z0-9_-]/g, "\\$&");
   }
 
   function injectStyles() {
+    if (
+      document.getElementById(
+        "plansip-ai-perspective-styles"
+      )
+    ) {
+      return;
+    }
 
     const style =
       document.createElement("style");
 
+    style.id =
+      "plansip-ai-perspective-styles";
+
     style.textContent = `
-
-      .plansip-ai-global-chip {
-        width: min(1180px, calc(100% - 32px));
-        margin: 12px auto 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 10px 14px;
-        border-radius: 999px;
-        border: 1px solid rgba(124,58,237,.20);
+      .plansip-ai-inline {
+        margin: 0 0 16px;
+        padding: 14px 16px;
+        border-radius: 16px;
+        border: 1px solid rgba(124,58,237,.22);
         background:
           linear-gradient(
-            90deg,
-            rgba(124,58,237,.08),
-            rgba(14,165,233,.08),
-            rgba(16,185,129,.08)
-          );
-        font-size: .88rem;
-      }
-
-      .plansip-ai-host {
-        margin: 18px 0 30px;
-      }
-
-      .plansip-ai-card {
-        position: relative;
-        overflow: hidden;
-        border:
-          1px solid
-          rgba(124,58,237,.24);
-        border-radius: 20px;
-        padding: 20px;
-
-        background:
-          radial-gradient(
-            circle at 100% 0,
-            rgba(14,165,233,.10),
-            transparent 35%
-          ),
-          radial-gradient(
-            circle at 0 100%,
-            rgba(124,58,237,.10),
-            transparent 38%
-          ),
-          var(--panel,#fff);
-
-        box-shadow:
-          0 16px 40px
-          rgba(30,41,59,.08);
-      }
-
-      .plansip-ai-glow {
-        position: absolute;
-        width: 140px;
-        height: 140px;
-        right: -55px;
-        top: -65px;
-        border-radius: 50%;
-        background:
-          rgba(124,58,237,.12);
-        filter: blur(18px);
-      }
-
-      .plansip-ai-head {
-        position: relative;
-        display: flex;
-        gap: 16px;
-        align-items: center;
-        justify-content:
-          space-between;
-      }
-
-      .plansip-ai-kicker {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-size: .72rem;
-        font-weight: 900;
-        letter-spacing: .13em;
-        padding: 6px 9px;
-        border-radius: 999px;
-        background:
-          linear-gradient(
-            90deg,
-            rgba(124,58,237,.14),
-            rgba(14,165,233,.13)
+            135deg,
+            rgba(124,58,237,.07),
+            rgba(14,165,233,.05)
           );
       }
 
-      .plansip-ai-title {
-        margin-top: 9px;
+      .plansip-ai-inline-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+      }
+
+      .plansip-ai-inline-title {
         font-weight: 850;
-        font-size: 1.16rem;
+        font-size: 1rem;
       }
 
-      .plansip-ai-sub {
-        margin-top: 5px;
-        font-size: .91rem;
-        opacity: .74;
+      .plansip-ai-inline-title span {
+        margin-right: 5px;
+      }
+
+      .plansip-ai-inline-sub {
+        margin-top: 3px;
+        font-size: .82rem;
+        opacity: .72;
       }
 
       .plansip-ai-btn {
-        min-width: 118px;
-      }
-
-      .plansip-ai-status {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-top: 14px;
-        padding-top: 13px;
-        border-top:
-          1px dashed
-          rgba(124,58,237,.18);
-        font-size: .82rem;
-        opacity: .74;
-      }
-
-      .plansip-ai-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: #22c55e;
+        white-space: nowrap;
       }
 
       .plansip-ai-output {
         display: none;
-        margin-top: 15px;
-        padding: 16px;
-        border-radius: 15px;
+        margin-top: 12px;
+        padding: 13px 14px;
+        border-radius: 13px;
         white-space: pre-wrap;
-        line-height: 1.58;
-        font-size: .95rem;
+        line-height: 1.55;
+        font-size: .93rem;
       }
 
       .plansip-ai-output:not(:empty) {
@@ -585,100 +408,38 @@ AI will be tried again the next time you press Ask AI.`
       .plansip-ai-output.is-ai {
         border:
           1px solid
-          rgba(124,58,237,.22);
+          rgba(124,58,237,.20);
 
         background:
-          linear-gradient(
-            135deg,
-            rgba(124,58,237,.09),
-            rgba(14,165,233,.07)
-          );
-      }
-
-      .plansip-ai-output.is-formula {
-        border:
-          1px solid
-          rgba(245,158,11,.26);
-
-        background:
-          rgba(245,158,11,.08);
+          rgba(124,58,237,.06);
       }
 
       .plansip-ai-output.is-loading {
         border:
           1px solid
-          rgba(14,165,233,.22);
+          rgba(14,165,233,.20);
 
         background:
-          rgba(14,165,233,.07);
+          rgba(14,165,233,.06);
       }
 
-      .plansip-result-mode-badge {
-        width: max-content;
-        max-width: 100%;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin: 0 0 12px;
-        padding: 6px 10px;
-        border-radius: 999px;
-        font-size: .72rem;
-        font-weight: 850;
-      }
-
-      .plansip-result-ai-assisted {
-        position: relative;
-        border-radius: 18px;
-        outline:
-          2px solid
-          rgba(124,58,237,.20);
-
-        box-shadow:
-          0 0 0 5px
-          rgba(124,58,237,.05),
-          0 16px 36px
-          rgba(124,58,237,.07);
-      }
-
-      .plansip-result-ai-assisted
-      > .plansip-result-mode-badge {
-        color: #5b21b6;
+      .plansip-ai-output.is-formula {
+        border:
+          1px solid
+          rgba(245,158,11,.20);
 
         background:
-          linear-gradient(
-            90deg,
-            rgba(124,58,237,.14),
-            rgba(14,165,233,.12)
-          );
+          rgba(245,158,11,.06);
       }
 
-      .plansip-result-ai-pending {
-        border-radius: 18px;
-        outline:
-          2px dashed
-          rgba(14,165,233,.22);
-      }
-
-      .plansip-result-formula
-      > .plansip-result-mode-badge {
-        background:
-          rgba(245,158,11,.10);
-      }
-
-      @media(max-width:640px) {
-
-        .plansip-ai-head {
+      @media (max-width: 640px) {
+        .plansip-ai-inline-head {
           align-items: stretch;
           flex-direction: column;
         }
 
         .plansip-ai-btn {
           width: 100%;
-        }
-
-        .plansip-ai-global-chip {
-          border-radius: 16px;
-          text-align: center;
         }
       }
     `;
@@ -687,11 +448,8 @@ AI will be tried again the next time you press Ask AI.`
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener(
-      "DOMContentLoaded",
-      initAI
-    );
+    document.addEventListener("DOMContentLoaded", init);
   } else {
-    initAI();
+    init();
   }
 })();
