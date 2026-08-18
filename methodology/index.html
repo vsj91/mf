@@ -1,0 +1,48 @@
+<!doctype html><html lang="en-IN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PlanSIP Methodology: Data, Calculations, Screening and AI</title>
+  <meta name="description" content="How PlanSIP uses mutual fund NAV data, calculates returns and SIP scenarios, describes volatility/drawdown, screens funds and uses AI.">
+  <meta name="author" content="PlanSIP Editorial Team">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <link rel="canonical" href="https://plansip.com/methodology/">
+  <link rel="stylesheet" href="/seo-page.css">
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-SL2K7H87JM"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", "G-SL2K7H87JM");
+  </script>
+</head>
+<body>
+<header class="topbar"><div class="shell nav"><a class="brand" href="/"><span class="mark">₹</span><span>PlanSIP</span></a><a href="/#learn">Learn</a></div></header>
+<main class="shell"><section class="hero"><span class="eyebrow">Methodology</span><h1>How PlanSIP produces a result</h1><p class="lead">This page documents the difference between raw data, deterministic calculations, screening logic, future assumptions and AI explanations.</p><p><strong>Last reviewed:</strong> 18 August 2026</p></section>
+<section class="policy">
+<article class="card"><h2>1. Data source</h2><p>PlanSIP uses MFapi.in for mutual fund search and historical NAV observations where available. Third-party API data can be delayed, incomplete or unavailable. PlanSIP does not treat API availability as proof that all official scheme details are current.</p></article>
+<article class="card"><h2>2. Scheme identification</h2><p>Scheme names and available metadata are used to identify categories/variants such as Direct, Regular, Growth and IDCW. Naming is imperfect, so the exact AMC scheme, plan and option must be verified before a transaction.</p></article>
+<article class="card"><h2>3. Historical returns</h2><p>Point-to-point or annualized returns are calculated only when sufficient usable NAV history exists. A missing period should remain unavailable rather than being invented. Annualized return describes start-to-end growth and does not show the path in between.</p></article>
+<article class="card"><h2>4. Volatility</h2><p>Volatility is derived from historical movement and is used as a descriptive risk measure. Its value depends on the observation window and data frequency. Historical calm does not guarantee future calm.</p></article>
+<article class="card"><h2>5. Drawdown</h2><p>Drawdown measures decline from a previous historical peak; maximum drawdown is the deepest observed peak-to-trough decline in the chosen history. It is not a forecast of the next possible loss.</p></article>
+<article class="card"><h2>6. Fund Finder</h2><p>The Fund Finder begins with goal, time horizon, risk preference and return preference, then organizes eligible funds using category fit and available historical evidence. Historical return, consistency, volatility, drawdown and amount of usable history can influence the analytical score. The score is a screen—not an investment recommendation or suitability certificate.</p></article>
+<article class="card"><h2>7. SIP Calculator</h2><p>The assumption-based SIP calculator compounds periodic contributions using the return selected by the user. The selected return is an assumption, not a prediction. Step-up calculations increase future contributions according to the selected annual increase.</p></article>
+<article class="card"><h2>8. Historical SIP Replay</h2><p>SIP Replay uses available historical NAV observations to simulate regular investments over a past period. It accumulates units using historical NAVs and values those units using available ending data. Real transaction cut-off rules, holidays and execution details can differ from a simplified historical simulation.</p></article>
+<article class="card"><h2>9. Loan, corpus and freedom tools</h2><p>These are scenario calculators. They use entered balances, rates, contributions, time and return assumptions. They do not automatically include every fee, tax, lender rule, inflation change or personal cash-flow event.</p></article>
+<article class="card"><h2>10. Gold/Silver screening</h2><p>Metal-fund tools identify relevant mutual fund schemes from available naming/data and analyze NAV history. They do not forecast commodity prices and should not be used as commodity-trading signals.</p></article>
+<article class="card"><h2>11. AI Assistant and AI Perspective</h2><p>AI is an explanation layer. It can summarize a PlanSIP result, compare trade-offs and explain risk concepts. It can be wrong. Deterministic calculations, official scheme documents and primary sources take precedence over AI wording.</p></article>
+<article class="card"><h2>12. What PlanSIP does not model fully</h2><ul><li>Future portfolio changes or fund-manager decisions.</li><li>Every tax rule or individual tax situation.</li><li>Complete portfolio overlap and household-level suitability.</li><li>Future expense ratio, exit load or regulation changes.</li><li>Guaranteed future returns.</li></ul></article>
+<article class="card"><h2>Verification checklist</h2><p>Before acting, verify the exact scheme/option, latest AMC factsheet, investment objective, portfolio, official Riskometer, expense ratio, exit load, taxation and relevant scheme documents.</p><ul><li><a href="https://www.amfiindia.com/investor" rel="noopener noreferrer">AMFI Investor Corner</a></li><li><a href="https://investor.sebi.gov.in/riskometer.html" rel="noopener noreferrer">SEBI Riskometer</a></li><li><a href="https://investor.sebi.gov.in/understanding_mf.html" rel="noopener noreferrer">SEBI Understanding Mutual Funds</a></li></ul></article>
+</section></main><footer class="shell">
+  <div class="site-links">
+    <a href="/">Home</a>
+    <a href="/about/">About</a>
+    <a href="/methodology/">Methodology</a>
+    <a href="/editorial-policy/">Editorial Policy</a>
+    <a href="/contact/">Contact & Corrections</a>
+    <a href="/privacy-policy/">Privacy Policy</a>
+    <a href="/terms/">Terms & Disclaimer</a>
+    <a href="/sitemap.xml">Sitemap</a>
+  </div>
+  <p>PlanSIP is an educational and analytical project. It does not provide personalized investment advice. Mutual fund investments are subject to market risks.</p>
+</footer></body></html>
